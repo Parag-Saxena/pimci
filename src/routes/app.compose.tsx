@@ -223,10 +223,12 @@ function Compose() {
   const params = useSearch({ from: "/app/compose" });
   const [draft, setDraft] = useState<Draft>(emptyDraft(params.platform ?? "linkedin"));
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [trendOpen, setTrendOpen] = useState(false);
   const [loadingDraft, setLoadingDraft] = useState<boolean>(Boolean(params.id));
-  const initial = useRef(true);
+  const [view, setView] = useState<"write" | "preview">("write");
+  const [dirty, setDirty] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Load draft if id in url
