@@ -200,6 +200,7 @@ function AuthPage() {
           </p>
         </div>
       </main>
+      )}
     </div>
   );
 }
