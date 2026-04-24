@@ -272,31 +272,37 @@ function Compose() {
   const counterColor =
     len > limit ? "text-destructive" : pct > 0.9 ? "text-warning" : "text-muted-foreground";
 
+  type SaveStatus = "draft" | "scheduled" | "published";
   const save = useCallback(
-    async (overrides?: Partial<Draft>) => {
-      if (!user) return;
-      setSaving(true);
+    async (
+      intent: SaveStatus = "draft",
+      overrides?: Partial<Draft>,
+    ): Promise<{ id: string } | null> => {
+      if (!user) return null;
       const merged = { ...draft, ...overrides };
+      if (intent === "scheduled" && !merged.scheduled_at) {
+        toast.error("Pick a date & time first");
+        return null;
+      }
+      const isPublishing = intent === "published";
+      if (isPublishing) setPublishing(true);
+      else setSaving(true);
       const payload = {
         user_id: user.id,
         platform: merged.platform,
         content: merged.content,
-        scheduled_at: merged.scheduled_at,
+        scheduled_at: intent === "scheduled" ? merged.scheduled_at : null,
         ai_generated: merged.ai_generated,
         source_brief: merged.source_brief,
         variant_group_id: merged.variant_group_id,
-        status: (merged.scheduled_at ? "scheduled" : "draft") as
-          | "draft"
-          | "scheduled"
-          | "ready"
-          | "published"
-          | "failed",
+        published_at: isPublishing ? new Date().toISOString() : null,
+        status: intent as "draft" | "scheduled" | "published",
       };
       try {
-        if (merged.id) {
-          const { error } = await supabase.from("posts").update(payload).eq("id", merged.id);
+        let id = merged.id;
+        if (id) {
+          const { error } = await supabase.from("posts").update(payload).eq("id", id);
           if (error) throw error;
-          toast.success("Saved");
         } else {
           const { data, error } = await supabase
             .from("posts")
@@ -304,32 +310,34 @@ function Compose() {
             .select("id")
             .single();
           if (error) throw error;
-          setDraft((d) => ({ ...d, ...overrides, id: data.id }));
-          navigate({ to: "/app/compose", search: { id: data.id }, replace: true });
-          toast.success("Draft saved");
+          id = data.id;
+          setDraft((d) => ({ ...d, ...overrides, id: id! }));
+          navigate({ to: "/app/compose", search: { id: id! }, replace: true });
         }
+        setDirty(false);
+        toast.success(
+          intent === "draft"
+            ? "Draft saved"
+            : intent === "scheduled"
+              ? "Post scheduled"
+              : "Post marked as published",
+        );
+        return { id: id! };
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Save failed");
+        return null;
       } finally {
         setSaving(false);
+        setPublishing(false);
       }
     },
     [user, draft, navigate],
   );
 
-  // Auto-save on idle (skip first render)
+  // Track unsaved changes (skip on initial load / id swap)
   useEffect(() => {
-    if (initial.current) {
-      initial.current = false;
-      return;
-    }
-    if (!draft.content.trim()) return;
-    const t = setTimeout(() => {
-      save();
-    }, 1500);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft.content, draft.platform, draft.scheduled_at]);
+    setDirty(false);
+  }, [draft.id]);
 
   const setPlatform = (p: Platform) => setDraft((d) => ({ ...d, platform: p }));
 
