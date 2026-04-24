@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/app")({
   component: AppShell,
@@ -37,11 +38,7 @@ function AppShell() {
   }, [user, loading, navigate]);
 
   if (loading || !user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    );
+    return <AppShellSkeleton />;
   }
 
   const initials = (user.user_metadata?.display_name || user.email || "U")
@@ -157,6 +154,76 @@ function AppShell() {
 
         <main className="flex-1 overflow-auto pb-16 md:pb-0">
           <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function AppShellSkeleton() {
+  return (
+    <div className="flex min-h-screen bg-background" aria-busy="true" aria-live="polite">
+      {/* Sidebar skeleton */}
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
+        <div className="flex h-14 items-center gap-2 border-b border-border px-5">
+          <Skeleton className="h-7 w-7 rounded-md" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <nav className="flex-1 space-y-1 px-3 py-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-2.5 rounded-md px-3 py-2">
+              <Skeleton className="h-4 w-4 rounded" />
+              <Skeleton className="h-3.5 w-24" />
+            </div>
+          ))}
+        </nav>
+        <div className="border-t border-border p-3">
+          <div className="flex items-center gap-2.5 px-2 py-2">
+            <Skeleton className="h-7 w-7 rounded-full" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-2.5 w-28" />
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main skeleton */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-background/80 px-6">
+          <Skeleton className="h-6 w-28 md:hidden" />
+          <div className="ml-auto flex items-center gap-2">
+            <Skeleton className="h-8 w-8 rounded-md" />
+            <Skeleton className="h-8 w-24 rounded-md" />
+          </div>
+        </header>
+        <main className="flex-1 overflow-auto p-6 pb-16 md:pb-0">
+          <div className="mx-auto max-w-5xl space-y-6">
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="h-4 w-72" />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="rounded-xl border border-border bg-card p-5">
+                  <Skeleton className="mb-3 h-3 w-20" />
+                  <Skeleton className="h-7 w-16" />
+                </div>
+              ))}
+            </div>
+            <div className="space-y-3 rounded-xl border border-border bg-card p-5">
+              <Skeleton className="h-4 w-32" />
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 py-2">
+                  <Skeleton className="h-9 w-9 rounded-md" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-3.5 w-3/4" />
+                    <Skeleton className="h-3 w-1/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </main>
       </div>
     </div>

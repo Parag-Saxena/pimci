@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -75,6 +76,8 @@ function AuthPage() {
     }
   };
 
+  const showSkeleton = loading || (!loading && !!user);
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="flex h-14 items-center justify-between px-6">
@@ -87,7 +90,37 @@ function AuthPage() {
         <ThemeToggle />
       </header>
 
-      <main className="flex flex-1 items-center justify-center px-6 py-10">
+      {showSkeleton ? (
+        <main className="flex flex-1 items-center justify-center px-6 py-10">
+          <div className="w-full max-w-sm" aria-busy="true" aria-live="polite">
+            <div className="mb-8 flex flex-col items-center gap-2">
+              <Skeleton className="h-7 w-44" />
+              <Skeleton className="h-4 w-56" />
+            </div>
+            <Skeleton className="h-10 w-full rounded-md" />
+            <div className="my-6 flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <Skeleton className="h-3 w-4" />
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Skeleton className="h-3 w-12" />
+                <Skeleton className="h-10 w-full rounded-md" />
+              </div>
+              <div className="space-y-1.5">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-10 w-full rounded-md" />
+              </div>
+              <Skeleton className="h-10 w-full rounded-md" />
+            </div>
+            <div className="mt-6 flex justify-center">
+              <Skeleton className="h-3 w-48" />
+            </div>
+          </div>
+        </main>
+      ) : (
+        <main className="flex flex-1 items-center justify-center px-6 py-10">
         <div className="w-full max-w-sm">
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-semibold tracking-tight">
@@ -156,6 +189,7 @@ function AuthPage() {
           </p>
         </div>
       </main>
+      )}
     </div>
   );
 }
