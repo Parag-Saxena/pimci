@@ -61,6 +61,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PLATFORM_LIMITS, type Platform } from "@/lib/platform";
+import { runPreflight } from "@/lib/preflight";
 import { useGeneratePosts, useGenerateTrendIdeas, useRewritePost } from "@/hooks/use-ai";
 
 const search = z.object({
