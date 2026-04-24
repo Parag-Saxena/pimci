@@ -20,7 +20,13 @@ import {
   Link2,
   Quote,
   Code,
+  Eye,
+  Pencil,
+  CalendarClock,
+  CheckCircle2,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -217,10 +223,12 @@ function Compose() {
   const params = useSearch({ from: "/app/compose" });
   const [draft, setDraft] = useState<Draft>(emptyDraft(params.platform ?? "linkedin"));
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [trendOpen, setTrendOpen] = useState(false);
   const [loadingDraft, setLoadingDraft] = useState<boolean>(Boolean(params.id));
-  const initial = useRef(true);
+  const [view, setView] = useState<"write" | "preview">("write");
+  const [dirty, setDirty] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Load draft if id in url
@@ -264,31 +272,37 @@ function Compose() {
   const counterColor =
     len > limit ? "text-destructive" : pct > 0.9 ? "text-warning" : "text-muted-foreground";
 
+  type SaveStatus = "draft" | "scheduled" | "published";
   const save = useCallback(
-    async (overrides?: Partial<Draft>) => {
-      if (!user) return;
-      setSaving(true);
+    async (
+      intent: SaveStatus = "draft",
+      overrides?: Partial<Draft>,
+    ): Promise<{ id: string } | null> => {
+      if (!user) return null;
       const merged = { ...draft, ...overrides };
+      if (intent === "scheduled" && !merged.scheduled_at) {
+        toast.error("Pick a date & time first");
+        return null;
+      }
+      const isPublishing = intent === "published";
+      if (isPublishing) setPublishing(true);
+      else setSaving(true);
       const payload = {
         user_id: user.id,
         platform: merged.platform,
         content: merged.content,
-        scheduled_at: merged.scheduled_at,
+        scheduled_at: intent === "scheduled" ? merged.scheduled_at : null,
         ai_generated: merged.ai_generated,
         source_brief: merged.source_brief,
         variant_group_id: merged.variant_group_id,
-        status: (merged.scheduled_at ? "scheduled" : "draft") as
-          | "draft"
-          | "scheduled"
-          | "ready"
-          | "published"
-          | "failed",
+        published_at: isPublishing ? new Date().toISOString() : null,
+        status: intent as "draft" | "scheduled" | "published",
       };
       try {
-        if (merged.id) {
-          const { error } = await supabase.from("posts").update(payload).eq("id", merged.id);
+        let id = merged.id;
+        if (id) {
+          const { error } = await supabase.from("posts").update(payload).eq("id", id);
           if (error) throw error;
-          toast.success("Saved");
         } else {
           const { data, error } = await supabase
             .from("posts")
@@ -296,34 +310,44 @@ function Compose() {
             .select("id")
             .single();
           if (error) throw error;
-          setDraft((d) => ({ ...d, ...overrides, id: data.id }));
-          navigate({ to: "/app/compose", search: { id: data.id }, replace: true });
-          toast.success("Draft saved");
+          id = data.id;
+          setDraft((d) => ({ ...d, ...overrides, id: id! }));
+          navigate({ to: "/app/compose", search: { id: id! }, replace: true });
         }
+        setDirty(false);
+        toast.success(
+          intent === "draft"
+            ? "Draft saved"
+            : intent === "scheduled"
+              ? "Post scheduled"
+              : "Post marked as published",
+        );
+        return { id: id! };
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Save failed");
+        return null;
       } finally {
         setSaving(false);
+        setPublishing(false);
       }
     },
     [user, draft, navigate],
   );
 
-  // Auto-save on idle (skip first render)
+  // Track unsaved changes (skip on initial load / id swap)
   useEffect(() => {
-    if (initial.current) {
-      initial.current = false;
-      return;
-    }
-    if (!draft.content.trim()) return;
-    const t = setTimeout(() => {
-      save();
-    }, 1500);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft.content, draft.platform, draft.scheduled_at]);
+    setDirty(false);
+  }, [draft.id]);
 
-  const setPlatform = (p: Platform) => setDraft((d) => ({ ...d, platform: p }));
+  const setPlatform = (p: Platform) => {
+    setDraft((d) => ({ ...d, platform: p }));
+    setDirty(true);
+  };
+
+  const setScheduledAt = (iso: string | null) => {
+    setDraft((d) => ({ ...d, scheduled_at: iso }));
+    setDirty(true);
+  };
 
   const remove = async () => {
     if (!draft.id) {
@@ -369,7 +393,12 @@ function Compose() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Compose</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {draft.id ? "Editing" : "New post"} · {saving ? "Saving…" : "Auto-saved"}
+            {draft.id ? "Editing" : "New post"} ·{" "}
+            {saving
+              ? "Saving…"
+              : dirty
+                ? <span className="text-warning">Unsaved changes</span>
+                : "All changes saved"}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -401,26 +430,77 @@ function Compose() {
       </Tabs>
 
       <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
-        <MarkdownToolbar
-          onAction={(action) => {
-            const el = textareaRef.current;
-            if (!el) return;
-            applyMarkdown(el, draft.content, action, (next) =>
-              setDraft((d) => ({ ...d, content: next })),
-            );
-          }}
-        />
-        <Textarea
-          ref={textareaRef}
-          value={draft.content}
-          onChange={(e) => setDraft((d) => ({ ...d, content: e.target.value }))}
-          placeholder={
-            draft.platform === "linkedin"
-              ? "Write a long-form post for LinkedIn — opening hook, short paragraphs, soft CTA…\n\nMarkdown supported: **bold**, *italic*, # headings, - lists, > quotes."
-              : "Say something punchy in 280 characters or less…"
-          }
-          className="min-h-[300px] resize-none rounded-none border-0 bg-transparent font-mono text-sm shadow-none focus-visible:ring-0 md:text-sm"
-        />
+        <div className="flex items-center justify-between border-b border-border bg-muted/30 px-2 py-1.5">
+          <div className="inline-flex items-center gap-0.5 rounded-md bg-background p-0.5">
+            <button
+              type="button"
+              onClick={() => setView("write")}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-colors",
+                view === "write"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Pencil className="h-3 w-3" />
+              Write
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("preview")}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-colors",
+                view === "preview"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Eye className="h-3 w-3" />
+              Preview
+            </button>
+          </div>
+          <span className="pr-1 text-[10px] text-muted-foreground">Markdown</span>
+        </div>
+
+        {view === "write" ? (
+          <>
+            <MarkdownToolbar
+              onAction={(action) => {
+                const el = textareaRef.current;
+                if (!el) return;
+                applyMarkdown(el, draft.content, action, (next) => {
+                  setDraft((d) => ({ ...d, content: next }));
+                  setDirty(true);
+                });
+              }}
+            />
+            <Textarea
+              ref={textareaRef}
+              value={draft.content}
+              onChange={(e) => {
+                setDraft((d) => ({ ...d, content: e.target.value }));
+                setDirty(true);
+              }}
+              placeholder={
+                draft.platform === "linkedin"
+                  ? "Write a long-form post for LinkedIn — opening hook, short paragraphs, soft CTA…\n\nMarkdown supported: **bold**, *italic*, # headings, - lists, > quotes."
+                  : "Say something punchy in 280 characters or less…"
+              }
+              className="min-h-[300px] resize-none rounded-none border-0 bg-transparent font-mono text-sm shadow-none focus-visible:ring-0 md:text-sm"
+            />
+          </>
+        ) : (
+          <div className="min-h-[300px] px-4 py-4">
+            {draft.content.trim() ? (
+              <div className="prose prose-sm max-w-none animate-fade-in dark:prose-invert prose-headings:font-semibold prose-headings:tracking-tight prose-p:leading-relaxed prose-a:text-primary prose-blockquote:border-primary prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:text-[0.85em] prose-code:before:content-none prose-code:after:content-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{draft.content}</ReactMarkdown>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Nothing to preview yet — start writing.</p>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
           <div className="flex items-center gap-2 text-xs">
             <span className={cn("tabular-nums", counterColor)}>
@@ -450,38 +530,69 @@ function Compose() {
       </div>
 
       {/* Schedule */}
-      <div className="mt-6 grid gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-[auto_1fr_auto] sm:items-end">
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Schedule</Label>
-          <div className="flex items-center gap-2 text-sm">
-            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-            {draft.scheduled_at ? (
-              format(new Date(draft.scheduled_at), "EEE, MMM d · h:mm a")
-            ) : (
-              <span className="text-muted-foreground">Not scheduled</span>
-            )}
+      <div className="mt-6 rounded-xl border border-border bg-card p-5">
+        <div className="grid gap-4 sm:grid-cols-2 sm:items-end">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Schedule</Label>
+            <div className="flex items-center gap-2 text-sm">
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+              {draft.scheduled_at ? (
+                format(new Date(draft.scheduled_at), "EEE, MMM d · h:mm a")
+              ) : (
+                <span className="text-muted-foreground">Not scheduled</span>
+              )}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="dt" className="text-xs text-muted-foreground">
+              Date & time (your local timezone)
+            </Label>
+            <Input
+              id="dt"
+              type="datetime-local"
+              value={draft.scheduled_at ? toLocalInput(draft.scheduled_at) : ""}
+              onChange={(e) =>
+                setScheduledAt(e.target.value ? new Date(e.target.value).toISOString() : null)
+              }
+            />
           </div>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="dt" className="text-xs text-muted-foreground">
-            Date & time (your local timezone)
-          </Label>
-          <Input
-            id="dt"
-            type="datetime-local"
-            value={draft.scheduled_at ? toLocalInput(draft.scheduled_at) : ""}
-            onChange={(e) =>
-              setDraft((d) => ({
-                ...d,
-                scheduled_at: e.target.value ? new Date(e.target.value).toISOString() : null,
-              }))
+
+        <div className="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
+          <Button
+            variant="outline"
+            onClick={() => save("draft")}
+            disabled={saving || publishing || !draft.content.trim()}
+          >
+            {saving ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-1.5 h-4 w-4" />
+            )}
+            Save draft
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => save("scheduled")}
+            disabled={
+              saving || publishing || !draft.content.trim() || !draft.scheduled_at
             }
-          />
+          >
+            <CalendarClock className="mr-1.5 h-4 w-4" />
+            Schedule post
+          </Button>
+          <Button
+            onClick={() => save("published")}
+            disabled={saving || publishing || !draft.content.trim()}
+          >
+            {publishing ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="mr-1.5 h-4 w-4" />
+            )}
+            Post now
+          </Button>
         </div>
-        <Button onClick={() => save()} disabled={saving || !draft.content.trim()}>
-          {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
-          Save
-        </Button>
       </div>
 
       <p className="mt-3 text-center text-xs text-muted-foreground">
@@ -492,15 +603,16 @@ function Compose() {
         open={aiOpen}
         onOpenChange={setAiOpen}
         platform={draft.platform}
-        onPick={(content, brief, variantGroupId) =>
+        onPick={(content, brief, variantGroupId) => {
           setDraft((d) => ({
             ...d,
             content,
             ai_generated: true,
             source_brief: brief,
             variant_group_id: variantGroupId,
-          }))
-        }
+          }));
+          setDirty(true);
+        }}
       />
       <TrendDialog
         open={trendOpen}
