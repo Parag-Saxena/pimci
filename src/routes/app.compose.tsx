@@ -85,7 +85,70 @@ const emptyDraft = (platform: Platform = "linkedin"): Draft => ({
   variant_group_id: null,
 });
 
-function Compose() {
+type MdAction =
+  | { wrap: string; placeholder?: string }
+  | { linePrefix: string; placeholder?: string }
+  | { custom: (sel: string) => { text: string; cursorOffset?: number } };
+
+function applyMarkdown(
+  el: HTMLTextAreaElement,
+  current: string,
+  action: MdAction,
+  onChange: (next: string) => void,
+) {
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  const selected = current.slice(start, end);
+
+  let next = current;
+  let nextStart = start;
+  let nextEnd = end;
+
+  if ("wrap" in action) {
+    const inner = selected || action.placeholder || "";
+    const insertion = `${action.wrap}${inner}${action.wrap}`;
+    next = current.slice(0, start) + insertion + current.slice(end);
+    nextStart = start + action.wrap.length;
+    nextEnd = nextStart + inner.length;
+  } else if ("linePrefix" in action) {
+    // Find start of current line
+    const lineStart = current.lastIndexOf("\n", start - 1) + 1;
+    const before = current.slice(0, lineStart);
+    const lineAndAfter = current.slice(lineStart);
+    const inner = selected || action.placeholder || "";
+    if (selected) {
+      // Prefix every selected line
+      const selBlock = current.slice(lineStart, end);
+      const prefixed = selBlock
+        .split("\n")
+        .map((l) => `${action.linePrefix}${l}`)
+        .join("\n");
+      next = before + prefixed + current.slice(end);
+      nextStart = lineStart;
+      nextEnd = before.length + prefixed.length;
+    } else {
+      next =
+        before +
+        action.linePrefix +
+        inner +
+        lineAndAfter.slice(0);
+      nextStart = lineStart + action.linePrefix.length;
+      nextEnd = nextStart + inner.length;
+    }
+  } else {
+    const out = action.custom(selected);
+    next = current.slice(0, start) + out.text + current.slice(end);
+    nextStart = start + (out.cursorOffset ?? out.text.length);
+    nextEnd = nextStart;
+  }
+
+  onChange(next);
+  // restore focus + selection after React updates
+  requestAnimationFrame(() => {
+    el.focus();
+    el.setSelectionRange(nextStart, nextEnd);
+  });
+}
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const params = useSearch({ from: "/app/compose" });
