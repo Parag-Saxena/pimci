@@ -547,6 +547,68 @@ function AccountCard({
           </AlertDescription>
         </Alert>
       )}
+
+      {history && history.length > 0 && (
+        <div className="mt-3 border-t border-border pt-3">
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setShowHistory((s) => !s)}
+              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+              aria-expanded={showHistory}
+            >
+              <History className="h-3 w-3" />
+              {showHistory ? "Hide" : "Show"} attempt history ({history.length})
+            </button>
+            {showHistory && onClearHistory && (
+              <button
+                type="button"
+                onClick={onClearHistory}
+                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="h-3 w-3" />
+                Clear
+              </button>
+            )}
+          </div>
+
+          {showHistory && (
+            <ul className="mt-2 max-h-56 space-y-1.5 overflow-auto pr-1">
+              {history.map((h) => (
+                <li
+                  key={h.id}
+                  className="flex items-start gap-2 rounded-md border border-border/60 bg-background/40 px-2 py-1.5"
+                >
+                  {h.status === "success" ? (
+                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+                  ) : (
+                    <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                      <time dateTime={h.ts}>
+                        {new Date(h.ts).toLocaleString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })}
+                      </time>
+                      <span className="rounded bg-muted px-1 py-px font-mono">
+                        {h.stage}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 break-words text-xs leading-snug">
+                      {h.message}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }
