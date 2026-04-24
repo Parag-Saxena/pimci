@@ -339,10 +339,25 @@ function ConnectedAccountsSection() {
       return;
     }
     // Safety: clear pending if popup closes without messaging
+    let receivedResult = false;
+    const onResult = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      const m = e.data as { type?: string } | null;
+      if (m?.type === "linkedin-oauth") receivedResult = true;
+    };
+    window.addEventListener("message", onResult);
     const timer = setInterval(() => {
       if (popup.closed) {
         clearInterval(timer);
+        window.removeEventListener("message", onResult);
         setPending((p) => (p === "linkedin" ? null : p));
+        if (!receivedResult) {
+          logAttempt({
+            status: "error",
+            stage: "popup_closed",
+            message: "Popup was closed before LinkedIn returned a result.",
+          });
+        }
         refresh();
       }
     }, 800);
