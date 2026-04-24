@@ -422,26 +422,77 @@ function Compose() {
       </Tabs>
 
       <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
-        <MarkdownToolbar
-          onAction={(action) => {
-            const el = textareaRef.current;
-            if (!el) return;
-            applyMarkdown(el, draft.content, action, (next) =>
-              setDraft((d) => ({ ...d, content: next })),
-            );
-          }}
-        />
-        <Textarea
-          ref={textareaRef}
-          value={draft.content}
-          onChange={(e) => setDraft((d) => ({ ...d, content: e.target.value }))}
-          placeholder={
-            draft.platform === "linkedin"
-              ? "Write a long-form post for LinkedIn — opening hook, short paragraphs, soft CTA…\n\nMarkdown supported: **bold**, *italic*, # headings, - lists, > quotes."
-              : "Say something punchy in 280 characters or less…"
-          }
-          className="min-h-[300px] resize-none rounded-none border-0 bg-transparent font-mono text-sm shadow-none focus-visible:ring-0 md:text-sm"
-        />
+        <div className="flex items-center justify-between border-b border-border bg-muted/30 px-2 py-1.5">
+          <div className="inline-flex items-center gap-0.5 rounded-md bg-background p-0.5">
+            <button
+              type="button"
+              onClick={() => setView("write")}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-colors",
+                view === "write"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Pencil className="h-3 w-3" />
+              Write
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("preview")}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-colors",
+                view === "preview"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Eye className="h-3 w-3" />
+              Preview
+            </button>
+          </div>
+          <span className="pr-1 text-[10px] text-muted-foreground">Markdown</span>
+        </div>
+
+        {view === "write" ? (
+          <>
+            <MarkdownToolbar
+              onAction={(action) => {
+                const el = textareaRef.current;
+                if (!el) return;
+                applyMarkdown(el, draft.content, action, (next) => {
+                  setDraft((d) => ({ ...d, content: next }));
+                  setDirty(true);
+                });
+              }}
+            />
+            <Textarea
+              ref={textareaRef}
+              value={draft.content}
+              onChange={(e) => {
+                setDraft((d) => ({ ...d, content: e.target.value }));
+                setDirty(true);
+              }}
+              placeholder={
+                draft.platform === "linkedin"
+                  ? "Write a long-form post for LinkedIn — opening hook, short paragraphs, soft CTA…\n\nMarkdown supported: **bold**, *italic*, # headings, - lists, > quotes."
+                  : "Say something punchy in 280 characters or less…"
+              }
+              className="min-h-[300px] resize-none rounded-none border-0 bg-transparent font-mono text-sm shadow-none focus-visible:ring-0 md:text-sm"
+            />
+          </>
+        ) : (
+          <div className="min-h-[300px] px-4 py-4">
+            {draft.content.trim() ? (
+              <div className="prose prose-sm max-w-none animate-fade-in dark:prose-invert prose-headings:font-semibold prose-headings:tracking-tight prose-p:leading-relaxed prose-a:text-primary prose-blockquote:border-primary prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:text-[0.85em] prose-code:before:content-none prose-code:after:content-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{draft.content}</ReactMarkdown>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Nothing to preview yet — start writing.</p>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
           <div className="flex items-center gap-2 text-xs">
             <span className={cn("tabular-nums", counterColor)}>
