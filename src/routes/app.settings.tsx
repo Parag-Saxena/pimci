@@ -402,6 +402,8 @@ function ConnectedAccountsSection() {
           account={linkedin}
           pending={pending === "linkedin"}
           lastError={linkedinError}
+          history={linkedinHistory}
+          onClearHistory={clearHistory}
           onDismissError={dismissLinkedinError}
           onConnect={connectLinkedIn}
           onDisconnect={() => disconnect("linkedin")}
