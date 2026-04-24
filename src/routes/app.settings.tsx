@@ -431,6 +431,8 @@ function AccountCard({
   account,
   pending,
   lastError,
+  history,
+  onClearHistory,
   onConnect,
   onDisconnect,
   onDismissError,
@@ -443,11 +445,14 @@ function AccountCard({
   account: ConnectedAccountSummary | undefined;
   pending: boolean;
   lastError?: string | null;
+  history?: LinkedInAttempt[];
+  onClearHistory?: () => void;
   onConnect: () => void;
   onDisconnect: () => void;
   onDismissError?: () => void;
   comingSoon?: boolean;
 }) {
+  const [showHistory, setShowHistory] = useState(false);
   const initials = (account?.display_name || account?.handle || label)
     .split(" ")
     .map((s) => s[0])
