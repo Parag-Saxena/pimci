@@ -14,7 +14,143 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ai_generations: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          model: string | null
+          output: Json
+          prompt: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          model?: string | null
+          output: Json
+          prompt: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          model?: string | null
+          output?: Json
+          prompt?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      post_variants: {
+        Row: {
+          brief: string
+          created_at: string
+          id: string
+          platform: Database["public"]["Enums"]["platform"]
+          tone: string | null
+          user_id: string
+        }
+        Insert: {
+          brief: string
+          created_at?: string
+          id?: string
+          platform: Database["public"]["Enums"]["platform"]
+          tone?: string | null
+          user_id: string
+        }
+        Update: {
+          brief?: string
+          created_at?: string
+          id?: string
+          platform?: Database["public"]["Enums"]["platform"]
+          tone?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      posts: {
+        Row: {
+          ai_generated: boolean
+          content: string
+          created_at: string
+          id: string
+          platform: Database["public"]["Enums"]["platform"]
+          published_at: string | null
+          scheduled_at: string | null
+          source_brief: string | null
+          status: Database["public"]["Enums"]["post_status"]
+          updated_at: string
+          user_id: string
+          variant_group_id: string | null
+        }
+        Insert: {
+          ai_generated?: boolean
+          content?: string
+          created_at?: string
+          id?: string
+          platform: Database["public"]["Enums"]["platform"]
+          published_at?: string | null
+          scheduled_at?: string | null
+          source_brief?: string | null
+          status?: Database["public"]["Enums"]["post_status"]
+          updated_at?: string
+          user_id: string
+          variant_group_id?: string | null
+        }
+        Update: {
+          ai_generated?: boolean
+          content?: string
+          created_at?: string
+          id?: string
+          platform?: Database["public"]["Enums"]["platform"]
+          published_at?: string | null
+          scheduled_at?: string | null
+          source_brief?: string | null
+          status?: Database["public"]["Enums"]["post_status"]
+          updated_at?: string
+          user_id?: string
+          variant_group_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_variant_group_id_fkey"
+            columns: ["variant_group_id"]
+            isOneToOne: false
+            referencedRelation: "post_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +159,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      platform: "linkedin" | "x"
+      post_status: "draft" | "scheduled" | "ready" | "published" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +287,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      platform: ["linkedin", "x"],
+      post_status: ["draft", "scheduled", "ready", "published", "failed"],
+    },
   },
 } as const
