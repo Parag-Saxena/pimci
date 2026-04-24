@@ -95,6 +95,7 @@ function Compose() {
   const [trendOpen, setTrendOpen] = useState(false);
   const [loadingDraft, setLoadingDraft] = useState<boolean>(Boolean(params.id));
   const initial = useRef(true);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Load draft if id in url
   useEffect(() => {
