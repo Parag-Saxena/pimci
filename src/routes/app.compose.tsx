@@ -435,6 +435,7 @@ function Compose() {
   const [view, setView] = useState<"write" | "preview">("write");
   const [dirty, setDirty] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const publishPostFn = useServerFn(publishPost);
 
   // Load draft if id in url
   useEffect(() => {
