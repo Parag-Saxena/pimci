@@ -516,7 +516,7 @@ function Compose() {
           </div>
         )}
 
-        <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-2.5">
           <div className="flex items-center gap-2 text-xs">
             <span className={cn("tabular-nums", counterColor)}>
               {len.toLocaleString()} / {limit.toLocaleString()}
@@ -530,8 +530,22 @@ function Compose() {
                 style={{ width: `${Math.min(pct, 1) * 100}%` }}
               />
             </div>
+            {draft.scheduled_at && (
+              <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] text-secondary-foreground">
+                <CalendarClock className="h-3 w-3" />
+                {format(new Date(draft.scheduled_at), "MMM d · h:mm a")}
+                <button
+                  type="button"
+                  onClick={() => setScheduledAt(null)}
+                  className="ml-0.5 text-muted-foreground hover:text-foreground"
+                  aria-label="Clear schedule"
+                >
+                  ×
+                </button>
+              </span>
+            )}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <Button variant="ghost" size="sm" onClick={duplicate} disabled={!draft.content}>
               <Copy className="mr-1.5 h-3.5 w-3.5" />
               Duplicate
@@ -540,87 +554,71 @@ function Compose() {
               <Trash2 className="mr-1.5 h-3.5 w-3.5" />
               Delete
             </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Schedule */}
-      <div className="mt-6 rounded-xl border border-border bg-card p-5">
-        <div className="grid gap-4 sm:grid-cols-2 sm:items-end">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Schedule</Label>
-            <div className="flex items-center gap-2 text-sm">
-              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-              {draft.scheduled_at ? (
-                format(new Date(draft.scheduled_at), "EEE, MMM d · h:mm a")
+            <span className="mx-1 hidden h-5 w-px bg-border sm:inline-block" aria-hidden />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => save("draft")}
+              disabled={saving || publishing || !draft.content.trim()}
+            >
+              {saving ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
               ) : (
-                <span className="text-muted-foreground">Not scheduled</span>
+                <Save className="mr-1.5 h-3.5 w-3.5" />
               )}
-            </div>
+              Save draft
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setScheduleOpen(true)}
+              disabled={saving || publishing || !draft.content.trim() || !preflight.ok}
+              title={!preflight.ok ? "Resolve preflight errors first" : undefined}
+            >
+              <CalendarClock className="mr-1.5 h-3.5 w-3.5" />
+              {draft.scheduled_at ? "Reschedule" : "Schedule"}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => save("published")}
+              disabled={saving || publishing || !draft.content.trim() || !preflight.ok}
+              title={!preflight.ok ? "Resolve preflight errors first" : undefined}
+            >
+              {publishing ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Post now
+            </Button>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="dt" className="text-xs text-muted-foreground">
-              Date & time (your local timezone)
-            </Label>
-            <Input
-              id="dt"
-              type="datetime-local"
-              value={draft.scheduled_at ? toLocalInput(draft.scheduled_at) : ""}
-              onChange={(e) =>
-                setScheduledAt(e.target.value ? new Date(e.target.value).toISOString() : null)
-              }
-            />
-          </div>
-        </div>
-
-        <PreflightPanel platform={draft.platform} preflight={preflight} />
-
-        <div className="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
-          <Button
-            variant="outline"
-            onClick={() => save("draft")}
-            disabled={saving || publishing || !draft.content.trim()}
-          >
-            {saving ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="mr-1.5 h-4 w-4" />
-            )}
-            Save draft
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => save("scheduled")}
-            disabled={
-              saving ||
-              publishing ||
-              !draft.content.trim() ||
-              !draft.scheduled_at ||
-              !preflight.ok
-            }
-            title={!preflight.ok ? "Resolve preflight errors first" : undefined}
-          >
-            <CalendarClock className="mr-1.5 h-4 w-4" />
-            Schedule post
-          </Button>
-          <Button
-            onClick={() => save("published")}
-            disabled={saving || publishing || !draft.content.trim() || !preflight.ok}
-            title={!preflight.ok ? "Resolve preflight errors first" : undefined}
-          >
-            {publishing ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : (
-              <CheckCircle2 className="mr-1.5 h-4 w-4" />
-            )}
-            Post now
-          </Button>
         </div>
       </div>
+
+      <PreflightPanel
+        platform={draft.platform}
+        preflight={preflight}
+        onApplyFix={(next) => {
+          setDraft((d) => ({ ...d, content: next }));
+          setDirty(true);
+        }}
+      />
 
       <p className="mt-3 text-center text-xs text-muted-foreground">
         Best times · LinkedIn: Tue–Thu 8–10am · X: Mon–Fri 12–3pm
       </p>
+
+      <ScheduleDialog
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
+        value={draft.scheduled_at}
+        saving={saving}
+        onConfirm={async (iso) => {
+          setScheduledAt(iso);
+          const res = await save("scheduled", { scheduled_at: iso });
+          if (res) setScheduleOpen(false);
+        }}
+      />
 
       <GenerateDialog
         open={aiOpen}
