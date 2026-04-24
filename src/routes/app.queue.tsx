@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Copy, ExternalLink, Trash2, CheckCircle2, Sparkles, Filter } from "lucide-react";
+import { Copy, ExternalLink, Trash2, CheckCircle2, Sparkles, Filter, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,8 @@ import {
   platformOpenUrl,
   type Platform,
 } from "@/lib/platform";
+import { publishPost } from "@/utils/social.functions";
+import { stripMarkdown } from "@/lib/preflight";
 
 export const Route = createFileRoute("/app/queue")({
   component: Queue,
@@ -48,6 +51,8 @@ function Queue() {
   const [platform, setPlatform] = useState<PlatformFilter>("all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
+  const publishPostFn = useServerFn(publishPost);
 
   const load = async () => {
     if (!user) return;
@@ -93,11 +98,30 @@ function Queue() {
 
   const copyAndOpen = async (p: PostRow) => {
     try {
-      await navigator.clipboard.writeText(p.content);
+      await navigator.clipboard.writeText(stripMarkdown(p.content).trim());
       window.open(platformOpenUrl(p.platform), "_blank");
       toast.success("Copied & opened " + PLATFORM_LABEL[p.platform]);
     } catch {
       toast.error("Could not copy");
+    }
+  };
+
+  const publishNow = async (p: PostRow) => {
+    setPublishingId(p.id);
+    try {
+      const result = await publishPostFn({ data: { postId: p.id } });
+      if (result.published) {
+        toast.success("Published to " + PLATFORM_LABEL[p.platform]);
+      } else if (result.manualFallback) {
+        await copyAndOpen(p);
+        toast.message(result.message);
+      }
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Publish failed");
+      load();
+    } finally {
+      setPublishingId(null);
     }
   };
 
@@ -223,8 +247,22 @@ function Queue() {
                   </button>
                 </div>
                 <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  {(p.status === "ready" || p.status === "scheduled" || p.status === "draft" || p.status === "failed") && (
+                    <Button
+                      size="sm"
+                      onClick={() => publishNow(p)}
+                      disabled={publishingId === p.id}
+                    >
+                      {publishingId === p.id ? (
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Send className="mr-1.5 h-3.5 w-3.5" />
+                      )}
+                      Publish
+                    </Button>
+                  )}
                   {p.status === "ready" && (
-                    <Button size="sm" onClick={() => copyAndOpen(p)}>
+                    <Button variant="ghost" size="sm" onClick={() => copyAndOpen(p)}>
                       <Copy className="mr-1.5 h-3.5 w-3.5" />
                       Copy & open
                     </Button>
@@ -235,7 +273,7 @@ function Queue() {
                       Mark done
                     </Button>
                   )}
-                  {p.status !== "ready" && p.status !== "scheduled" && (
+                  {p.status === "published" && (
                     <Button variant="ghost" size="icon" onClick={() => copyAndOpen(p)} title="Copy & open">
                       <ExternalLink className="h-3.5 w-3.5" />
                     </Button>

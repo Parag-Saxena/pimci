@@ -60,9 +60,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PLATFORM_LIMITS, PLATFORM_LABEL, type Platform } from "@/lib/platform";
+import { PLATFORM_LIMITS, PLATFORM_LABEL, platformOpenUrl, type Platform } from "@/lib/platform";
 import { runPreflight, stripMarkdown } from "@/lib/preflight";
 import { useGeneratePosts, useGenerateTrendIdeas, useRewritePost } from "@/hooks/use-ai";
+import { publishPost } from "@/utils/social.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 const search = z.object({
   id: z.string().optional(),
@@ -433,6 +435,7 @@ function Compose() {
   const [view, setView] = useState<"write" | "preview">("write");
   const [dirty, setDirty] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const publishPostFn = useServerFn(publishPost);
 
   // Load draft if id in url
   useEffect(() => {
@@ -502,6 +505,10 @@ function Compose() {
       const isPublishing = intent === "published";
       if (isPublishing) setPublishing(true);
       else setSaving(true);
+      // For "published" intent: save as draft first, then call publishPost which
+      // will either publish via API (LinkedIn) or return manualFallback=true.
+      const persistStatus: "draft" | "scheduled" | "published" =
+        intent === "published" ? "draft" : intent;
       const payload = {
         user_id: user.id,
         platform: merged.platform,
@@ -510,8 +517,8 @@ function Compose() {
         ai_generated: merged.ai_generated,
         source_brief: merged.source_brief,
         variant_group_id: merged.variant_group_id,
-        published_at: isPublishing ? new Date().toISOString() : null,
-        status: intent as "draft" | "scheduled" | "published",
+        published_at: null,
+        status: persistStatus,
       };
       try {
         let id = merged.id;
@@ -530,13 +537,27 @@ function Compose() {
           navigate({ to: "/app/compose", search: { id: id! }, replace: true });
         }
         setDirty(false);
-        toast.success(
-          intent === "draft"
-            ? "Draft saved"
-            : intent === "scheduled"
-              ? "Post scheduled"
-              : "Post marked as published",
-        );
+
+        if (intent === "published") {
+          // Try API publish; fall back to copy & open.
+          const result = await publishPostFn({ data: { postId: id! } });
+          if (result.published) {
+            toast.success("Published to " + PLATFORM_LABEL[merged.platform]);
+            setDraft((d) => ({ ...d, id: id! }));
+          } else if (result.manualFallback) {
+            try {
+              await navigator.clipboard.writeText(stripMarkdown(merged.content).trim());
+              window.open(platformOpenUrl(merged.platform), "_blank");
+              toast.message(result.message, {
+                description: "Copied content & opened " + PLATFORM_LABEL[merged.platform] + ".",
+              });
+            } catch {
+              toast.error(result.message);
+            }
+          }
+        } else {
+          toast.success(intent === "draft" ? "Draft saved" : "Post scheduled");
+        }
         return { id: id! };
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Save failed");
@@ -546,7 +567,7 @@ function Compose() {
         setPublishing(false);
       }
     },
-    [user, draft, navigate],
+    [user, draft, navigate, publishPostFn],
   );
 
   // Track unsaved changes (skip on initial load / id swap)
