@@ -385,7 +385,12 @@ function Compose() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Compose</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {draft.id ? "Editing" : "New post"} · {saving ? "Saving…" : "Auto-saved"}
+            {draft.id ? "Editing" : "New post"} ·{" "}
+            {saving
+              ? "Saving…"
+              : dirty
+                ? <span className="text-warning">Unsaved changes</span>
+                : "All changes saved"}
           </p>
         </div>
         <div className="flex items-center gap-2">
