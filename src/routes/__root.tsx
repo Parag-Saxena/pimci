@@ -38,13 +38,19 @@ export const Route = createRootRoute({
         content:
           "Write, AI-generate, and schedule LinkedIn and X posts from one minimal workspace.",
       },
-      { property: "og:title", content: "SocialDeck — AI post composer & scheduler" },
+      { property: "og:title", content: "SocialDeck — AI post composer & scheduler for LinkedIn and X" },
       {
         property: "og:description",
         content: "Write, AI-generate, and schedule LinkedIn and X posts.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "SocialDeck — AI post composer & scheduler for LinkedIn and X" },
+      { name: "description", content: "Create and schedule social media posts for LinkedIn and X with AI-powered content generation." },
+      { property: "og:description", content: "Create and schedule social media posts for LinkedIn and X with AI-powered content generation." },
+      { name: "twitter:description", content: "Create and schedule social media posts for LinkedIn and X with AI-powered content generation." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ba6c51d1-6c3e-4e26-82bf-249e84484830/id-preview-130cb85b--677ca6d3-5807-4393-a79e-f69705e1daf2.lovable.app-1777040361599.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ba6c51d1-6c3e-4e26-82bf-249e84484830/id-preview-130cb85b--677ca6d3-5807-4393-a79e-f69705e1daf2.lovable.app-1777040361599.png" },
     ],
     links: [
       {
