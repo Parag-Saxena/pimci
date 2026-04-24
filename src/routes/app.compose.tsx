@@ -92,8 +92,10 @@ function Compose() {
     if (!user) return;
     if (!params.id) {
       setDraft(emptyDraft(params.platform ?? "linkedin"));
+      setLoadingDraft(false);
       return;
     }
+    setLoadingDraft(true);
     (async () => {
       const { data, error } = await supabase
         .from("posts")
@@ -102,6 +104,7 @@ function Compose() {
         .maybeSingle();
       if (error) {
         toast.error("Could not load post");
+        setLoadingDraft(false);
         return;
       }
       if (data) {
@@ -115,6 +118,7 @@ function Compose() {
           variant_group_id: data.variant_group_id,
         });
       }
+      setLoadingDraft(false);
     })();
   }, [user, params.id, params.platform]);
 
