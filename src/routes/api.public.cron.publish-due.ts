@@ -16,7 +16,15 @@ import { stripMarkdown } from "@/lib/preflight";
 export const Route = createFileRoute("/api/public/cron/publish-due")({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
+        // Authenticate the cron caller. The pg_cron job must send
+        // `x-cron-secret: <CRON_SECRET>` so we know the request is trusted.
+        const expected = process.env.CRON_SECRET;
+        const provided = request.headers.get("x-cron-secret");
+        if (!expected || !provided || provided !== expected) {
+          return new Response("Unauthorized", { status: 401 });
+        }
+
         const now = new Date().toISOString();
 
         const { data: due, error } = await supabaseAdmin

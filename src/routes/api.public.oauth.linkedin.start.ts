@@ -8,21 +8,41 @@ function getRedirectUri(request: Request) {
   return `${url.origin}/api/public/oauth/linkedin/callback`;
 }
 
+/**
+ * Mints a LinkedIn OAuth authorize URL for the signed-in user.
+ *
+ * SECURITY: We accept POST and read the Supabase JWT from the
+ * `Authorization: Bearer <token>` header — never from the URL — so the token
+ * does not appear in server logs, browser history, or Referer headers.
+ *
+ * Response: { authorizeUrl: string }
+ * The browser then opens `authorizeUrl` in a popup. The httpOnly state cookie
+ * we set here is sent automatically when LinkedIn redirects back to our
+ * callback route.
+ */
 export const Route = createFileRoute("/api/public/oauth/linkedin/start")({
   server: {
     handlers: {
-      GET: async ({ request }) => {
+      POST: async ({ request }) => {
         try {
-          const url = new URL(request.url);
-          const accessToken = url.searchParams.get("token");
+          const authHeader = request.headers.get("authorization") ?? "";
+          const accessToken = authHeader.toLowerCase().startsWith("bearer ")
+            ? authHeader.slice(7).trim()
+            : "";
           if (!accessToken) {
-            return new Response("Missing auth token", { status: 401 });
+            return Response.json(
+              { error: "Missing auth token" },
+              { status: 401 },
+            );
           }
 
           // Verify the user via Supabase
           const { data, error } = await supabaseAdmin.auth.getUser(accessToken);
           if (error || !data?.user) {
-            return new Response("Invalid auth token", { status: 401 });
+            return Response.json(
+              { error: "Invalid auth token" },
+              { status: 401 },
+            );
           }
           const userId = data.user.id;
 
@@ -41,13 +61,13 @@ export const Route = createFileRoute("/api/public/oauth/linkedin/start")({
             state,
           });
 
-          return Response.redirect(authorizeUrl, 302);
+          return Response.json({ authorizeUrl });
         } catch (e) {
           const message = e instanceof Error ? e.message : "Unknown error";
           console.error("LinkedIn OAuth start error:", message);
-          return new Response(
-            `LinkedIn OAuth start failed: ${message}`,
-            { status: 500, headers: { "Content-Type": "text/plain" } },
+          return Response.json(
+            { error: `LinkedIn OAuth start failed: ${message}` },
+            { status: 500 },
           );
         }
       },

@@ -295,20 +295,27 @@ function ConnectedAccountsSection() {
       return;
     }
     setPending("linkedin");
-    const url = `/api/public/oauth/linkedin/start?token=${encodeURIComponent(session.access_token)}`;
 
-    // Pre-flight: hit the start endpoint with manual redirect so we can surface
-    // the exact error body if it doesn't redirect to LinkedIn.
+    // Call the start endpoint via POST with the Supabase JWT in the
+    // Authorization header. This avoids leaking the token via URL/Referer/logs.
     let authorizeUrl: string | null = null;
     try {
-      const res = await fetch(url, { method: "GET", redirect: "manual" });
-      // A redirect (opaqueredirect / 3xx) means the start endpoint succeeded.
-      if (res.type === "opaqueredirect" || (res.status >= 300 && res.status < 400)) {
-        authorizeUrl = url; // let the popup follow the redirect
-      } else {
-        const body = (await res.text()).trim();
-        const message =
-          body || `LinkedIn connect failed with HTTP ${res.status}.`;
+      const res = await fetch("/api/public/oauth/linkedin/start", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!res.ok) {
+        let message = `LinkedIn connect failed with HTTP ${res.status}.`;
+        try {
+          const body = await res.json();
+          if (body?.error) message = String(body.error);
+        } catch {
+          const text = (await res.text()).trim();
+          if (text) message = text;
+        }
         setPending(null);
         setLinkedinError(message);
         try { localStorage.setItem("linkedin-oauth-last-error", message); } catch (_e) { /* ignore */ }
@@ -316,6 +323,11 @@ function ConnectedAccountsSection() {
         logAttempt({ status: "error", stage: "start", message });
         return;
       }
+      const body = (await res.json()) as { authorizeUrl?: string };
+      if (!body.authorizeUrl) {
+        throw new Error("Missing authorizeUrl in response");
+      }
+      authorizeUrl = body.authorizeUrl;
     } catch (e) {
       const message = e instanceof Error ? e.message : "Network error";
       setPending(null);
