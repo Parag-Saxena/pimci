@@ -1,8 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, Loader2, Plug, Unplug, ExternalLink } from "lucide-react";
+import { AlertCircle, Loader2, Plug, Unplug, ExternalLink, History, Trash2, CheckCircle2, XCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  getLinkedInHistory,
+  recordLinkedInAttempt,
+  clearLinkedInHistory,
+  type LinkedInAttempt,
+} from "@/lib/linkedin-oauth-history";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -172,8 +178,22 @@ function ConnectedAccountsSection() {
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<null | "linkedin" | "x">(null);
   const [linkedinError, setLinkedinError] = useState<string | null>(null);
+  const [linkedinHistory, setLinkedinHistory] = useState<LinkedInAttempt[]>([]);
   const listFn = useServerFn(listConnectedAccounts);
   const disconnectFn = useServerFn(disconnectAccount);
+
+  const logAttempt = useCallback(
+    (entry: Parameters<typeof recordLinkedInAttempt>[0]) => {
+      const next = recordLinkedInAttempt(entry);
+      setLinkedinHistory(next);
+    },
+    [],
+  );
+
+  const clearHistory = useCallback(() => {
+    clearLinkedInHistory();
+    setLinkedinHistory([]);
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -186,7 +206,7 @@ function ConnectedAccountsSection() {
     }
   }, [listFn]);
 
-  // Load last persisted LinkedIn error on mount
+  // Load last persisted LinkedIn error + history on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem("linkedin-oauth-last-error");
@@ -194,6 +214,7 @@ function ConnectedAccountsSection() {
     } catch (_e) {
       // ignore
     }
+    setLinkedinHistory(getLinkedInHistory());
   }, []);
 
   // If the popup wrote a result to sessionStorage (popup-blocked fallback), pick it up.
@@ -207,15 +228,25 @@ function ConnectedAccountsSection() {
         setLinkedinError(null);
         localStorage.removeItem("linkedin-oauth-last-error");
         toast.success(parsed.message || "LinkedIn connected");
+        logAttempt({
+          status: "success",
+          stage: "callback",
+          message: parsed.message || "Connected.",
+        });
       } else if (parsed.message) {
         setLinkedinError(parsed.message);
         localStorage.setItem("linkedin-oauth-last-error", parsed.message);
         toast.error(parsed.message, { duration: 8000 });
+        logAttempt({
+          status: "error",
+          stage: "callback",
+          message: parsed.message,
+        });
       }
     } catch (_e) {
       // ignore
     }
-  }, []);
+  }, [logAttempt]);
 
   useEffect(() => {
     refresh();
@@ -232,18 +263,28 @@ function ConnectedAccountsSection() {
           setLinkedinError(null);
           try { localStorage.removeItem("linkedin-oauth-last-error"); } catch (_e) { /* ignore */ }
           toast.success(msg.message || "LinkedIn connected");
+          logAttempt({
+            status: "success",
+            stage: "callback",
+            message: msg.message || "Connected.",
+          });
           refresh();
         } else {
           const errMsg = msg.message || "LinkedIn connection failed";
           setLinkedinError(errMsg);
           try { localStorage.setItem("linkedin-oauth-last-error", errMsg); } catch (_e) { /* ignore */ }
           toast.error(errMsg, { duration: 8000 });
+          logAttempt({
+            status: "error",
+            stage: "callback",
+            message: errMsg,
+          });
         }
       }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [refresh]);
+  }, [refresh, logAttempt]);
 
   const linkedin = accounts.find((a) => a.platform === "linkedin");
   const x = accounts.find((a) => a.platform === "x");
@@ -272,6 +313,7 @@ function ConnectedAccountsSection() {
         setLinkedinError(message);
         try { localStorage.setItem("linkedin-oauth-last-error", message); } catch (_e) { /* ignore */ }
         toast.error(message, { duration: 10000 });
+        logAttempt({ status: "error", stage: "start", message });
         return;
       }
     } catch (e) {
@@ -280,6 +322,7 @@ function ConnectedAccountsSection() {
       setLinkedinError(message);
       try { localStorage.setItem("linkedin-oauth-last-error", message); } catch (_e) { /* ignore */ }
       toast.error(message, { duration: 10000 });
+      logAttempt({ status: "error", stage: "start", message });
       return;
     }
 
@@ -296,10 +339,25 @@ function ConnectedAccountsSection() {
       return;
     }
     // Safety: clear pending if popup closes without messaging
+    let receivedResult = false;
+    const onResult = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      const m = e.data as { type?: string } | null;
+      if (m?.type === "linkedin-oauth") receivedResult = true;
+    };
+    window.addEventListener("message", onResult);
     const timer = setInterval(() => {
       if (popup.closed) {
         clearInterval(timer);
+        window.removeEventListener("message", onResult);
         setPending((p) => (p === "linkedin" ? null : p));
+        if (!receivedResult) {
+          logAttempt({
+            status: "error",
+            stage: "popup_closed",
+            message: "Popup was closed before LinkedIn returned a result.",
+          });
+        }
         refresh();
       }
     }, 800);
@@ -344,6 +402,8 @@ function ConnectedAccountsSection() {
           account={linkedin}
           pending={pending === "linkedin"}
           lastError={linkedinError}
+          history={linkedinHistory}
+          onClearHistory={clearHistory}
           onDismissError={dismissLinkedinError}
           onConnect={connectLinkedIn}
           onDisconnect={() => disconnect("linkedin")}
@@ -371,6 +431,8 @@ function AccountCard({
   account,
   pending,
   lastError,
+  history,
+  onClearHistory,
   onConnect,
   onDisconnect,
   onDismissError,
@@ -383,11 +445,14 @@ function AccountCard({
   account: ConnectedAccountSummary | undefined;
   pending: boolean;
   lastError?: string | null;
+  history?: LinkedInAttempt[];
+  onClearHistory?: () => void;
   onConnect: () => void;
   onDisconnect: () => void;
   onDismissError?: () => void;
   comingSoon?: boolean;
 }) {
+  const [showHistory, setShowHistory] = useState(false);
   const initials = (account?.display_name || account?.handle || label)
     .split(" ")
     .map((s) => s[0])
@@ -481,6 +546,68 @@ function AccountCard({
             )}
           </AlertDescription>
         </Alert>
+      )}
+
+      {history && history.length > 0 && (
+        <div className="mt-3 border-t border-border pt-3">
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setShowHistory((s) => !s)}
+              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+              aria-expanded={showHistory}
+            >
+              <History className="h-3 w-3" />
+              {showHistory ? "Hide" : "Show"} attempt history ({history.length})
+            </button>
+            {showHistory && onClearHistory && (
+              <button
+                type="button"
+                onClick={onClearHistory}
+                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="h-3 w-3" />
+                Clear
+              </button>
+            )}
+          </div>
+
+          {showHistory && (
+            <ul className="mt-2 max-h-56 space-y-1.5 overflow-auto pr-1">
+              {history.map((h) => (
+                <li
+                  key={h.id}
+                  className="flex items-start gap-2 rounded-md border border-border/60 bg-background/40 px-2 py-1.5"
+                >
+                  {h.status === "success" ? (
+                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+                  ) : (
+                    <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                      <time dateTime={h.ts}>
+                        {new Date(h.ts).toLocaleString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })}
+                      </time>
+                      <span className="rounded bg-muted px-1 py-px font-mono">
+                        {h.stage}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 break-words text-xs leading-snug">
+                      {h.message}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </div>
   );
