@@ -12,6 +12,14 @@ import {
   Send,
   Loader2,
   Lightbulb,
+  Bold,
+  Italic,
+  Heading,
+  List,
+  ListOrdered,
+  Link2,
+  Quote,
+  Code,
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
