@@ -171,6 +171,7 @@ function ConnectedAccountsSection() {
   const [accounts, setAccounts] = useState<ConnectedAccountSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<null | "linkedin" | "x">(null);
+  const [linkedinError, setLinkedinError] = useState<string | null>(null);
   const listFn = useServerFn(listConnectedAccounts);
   const disconnectFn = useServerFn(disconnectAccount);
 
@@ -185,6 +186,37 @@ function ConnectedAccountsSection() {
     }
   }, [listFn]);
 
+  // Load last persisted LinkedIn error on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("linkedin-oauth-last-error");
+      if (stored) setLinkedinError(stored);
+    } catch (_e) {
+      // ignore
+    }
+  }, []);
+
+  // If the popup wrote a result to sessionStorage (popup-blocked fallback), pick it up.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("linkedin-oauth-result");
+      if (!raw) return;
+      sessionStorage.removeItem("linkedin-oauth-result");
+      const parsed = JSON.parse(raw) as { status?: string; message?: string };
+      if (parsed.status === "success") {
+        setLinkedinError(null);
+        localStorage.removeItem("linkedin-oauth-last-error");
+        toast.success(parsed.message || "LinkedIn connected");
+      } else if (parsed.message) {
+        setLinkedinError(parsed.message);
+        localStorage.setItem("linkedin-oauth-last-error", parsed.message);
+        toast.error(parsed.message, { duration: 8000 });
+      }
+    } catch (_e) {
+      // ignore
+    }
+  }, []);
+
   useEffect(() => {
     refresh();
   }, [refresh]);
@@ -193,14 +225,19 @@ function ConnectedAccountsSection() {
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       if (e.origin !== window.location.origin) return;
-      const msg = e.data as { type?: string; status?: string } | null;
+      const msg = e.data as { type?: string; status?: string; message?: string } | null;
       if (msg?.type === "linkedin-oauth") {
         setPending(null);
         if (msg.status === "success") {
-          toast.success("LinkedIn connected");
+          setLinkedinError(null);
+          try { localStorage.removeItem("linkedin-oauth-last-error"); } catch (_e) { /* ignore */ }
+          toast.success(msg.message || "LinkedIn connected");
           refresh();
         } else {
-          toast.error("LinkedIn connection failed");
+          const errMsg = msg.message || "LinkedIn connection failed";
+          setLinkedinError(errMsg);
+          try { localStorage.setItem("linkedin-oauth-last-error", errMsg); } catch (_e) { /* ignore */ }
+          toast.error(errMsg, { duration: 8000 });
         }
       }
     };
@@ -211,18 +248,51 @@ function ConnectedAccountsSection() {
   const linkedin = accounts.find((a) => a.platform === "linkedin");
   const x = accounts.find((a) => a.platform === "x");
 
-  const connectLinkedIn = () => {
+  const connectLinkedIn = async () => {
     if (!session?.access_token) {
       toast.error("Not signed in");
       return;
     }
     setPending("linkedin");
     const url = `/api/public/oauth/linkedin/start?token=${encodeURIComponent(session.access_token)}`;
-    const popup = window.open(url, "linkedin-oauth", "width=600,height=720");
+
+    // Pre-flight: hit the start endpoint with manual redirect so we can surface
+    // the exact error body if it doesn't redirect to LinkedIn.
+    let authorizeUrl: string | null = null;
+    try {
+      const res = await fetch(url, { method: "GET", redirect: "manual" });
+      // A redirect (opaqueredirect / 3xx) means the start endpoint succeeded.
+      if (res.type === "opaqueredirect" || (res.status >= 300 && res.status < 400)) {
+        authorizeUrl = url; // let the popup follow the redirect
+      } else {
+        const body = (await res.text()).trim();
+        const message =
+          body || `LinkedIn connect failed with HTTP ${res.status}.`;
+        setPending(null);
+        setLinkedinError(message);
+        try { localStorage.setItem("linkedin-oauth-last-error", message); } catch (_e) { /* ignore */ }
+        toast.error(message, { duration: 10000 });
+        return;
+      }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Network error";
+      setPending(null);
+      setLinkedinError(message);
+      try { localStorage.setItem("linkedin-oauth-last-error", message); } catch (_e) { /* ignore */ }
+      toast.error(message, { duration: 10000 });
+      return;
+    }
+
+    if (!authorizeUrl) {
+      setPending(null);
+      return;
+    }
+
+    const popup = window.open(authorizeUrl, "linkedin-oauth", "width=600,height=720");
     if (!popup) {
       // Popup blocked → full-page redirect
       setPending(null);
-      window.location.href = url;
+      window.location.href = authorizeUrl;
       return;
     }
     // Safety: clear pending if popup closes without messaging
@@ -240,12 +310,21 @@ function ConnectedAccountsSection() {
     try {
       await disconnectFn({ data: { platform } });
       toast.success("Disconnected");
+      if (platform === "linkedin") {
+        setLinkedinError(null);
+        try { localStorage.removeItem("linkedin-oauth-last-error"); } catch (_e) { /* ignore */ }
+      }
       await refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Disconnect failed");
     } finally {
       setPending(null);
     }
+  };
+
+  const dismissLinkedinError = () => {
+    setLinkedinError(null);
+    try { localStorage.removeItem("linkedin-oauth-last-error"); } catch (_e) { /* ignore */ }
   };
 
   return (
@@ -264,6 +343,8 @@ function ConnectedAccountsSection() {
           loading={loading}
           account={linkedin}
           pending={pending === "linkedin"}
+          lastError={linkedinError}
+          onDismissError={dismissLinkedinError}
           onConnect={connectLinkedIn}
           onDisconnect={() => disconnect("linkedin")}
         />
@@ -289,8 +370,10 @@ function AccountCard({
   loading,
   account,
   pending,
+  lastError,
   onConnect,
   onDisconnect,
+  onDismissError,
   comingSoon,
 }: {
   platform: "linkedin" | "x";
@@ -299,8 +382,10 @@ function AccountCard({
   loading: boolean;
   account: ConnectedAccountSummary | undefined;
   pending: boolean;
+  lastError?: string | null;
   onConnect: () => void;
   onDisconnect: () => void;
+  onDismissError?: () => void;
   comingSoon?: boolean;
 }) {
   const initials = (account?.display_name || account?.handle || label)
@@ -322,6 +407,11 @@ function AccountCard({
         ) : comingSoon ? (
           <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
             Coming soon
+          </span>
+        ) : lastError ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-medium text-destructive">
+            <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
+            Connection failed
           </span>
         ) : (
           <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
@@ -368,11 +458,31 @@ function AccountCard({
             ) : (
               <Plug className="mr-1.5 h-3.5 w-3.5" />
             )}
-            Connect
+            Connect {label}
             <ExternalLink className="ml-1 h-3 w-3 opacity-60" />
           </Button>
         </div>
       )}
+
+      {!account && lastError && (
+        <Alert variant="destructive" className="mt-3">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle className="text-xs">Last connection error</AlertTitle>
+          <AlertDescription className="mt-1 break-words text-xs">
+            {lastError}
+            {onDismissError && (
+              <button
+                type="button"
+                onClick={onDismissError}
+                className="ml-2 underline opacity-80 hover:opacity-100"
+              >
+                Dismiss
+              </button>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 }
+
