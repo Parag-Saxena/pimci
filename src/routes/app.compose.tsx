@@ -136,7 +136,12 @@ function Compose() {
         ai_generated: merged.ai_generated,
         source_brief: merged.source_brief,
         variant_group_id: merged.variant_group_id,
-        status: merged.scheduled_at ? "scheduled" : "draft",
+        status: (merged.scheduled_at ? "scheduled" : "draft") as
+          | "draft"
+          | "scheduled"
+          | "ready"
+          | "published"
+          | "failed",
       };
       try {
         if (merged.id) {
