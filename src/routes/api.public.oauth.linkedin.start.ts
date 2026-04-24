@@ -12,35 +12,44 @@ export const Route = createFileRoute("/api/public/oauth/linkedin/start")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const url = new URL(request.url);
-        const accessToken = url.searchParams.get("token");
-        if (!accessToken) {
-          return new Response("Missing auth token", { status: 401 });
+        try {
+          const url = new URL(request.url);
+          const accessToken = url.searchParams.get("token");
+          if (!accessToken) {
+            return new Response("Missing auth token", { status: 401 });
+          }
+
+          // Verify the user via Supabase
+          const { data, error } = await supabaseAdmin.auth.getUser(accessToken);
+          if (error || !data?.user) {
+            return new Response("Invalid auth token", { status: 401 });
+          }
+          const userId = data.user.id;
+
+          // Random state — bind to user via httpOnly cookie
+          const state = crypto.randomUUID();
+          setCookie("li_oauth_state", `${state}.${userId}`, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "lax",
+            path: "/",
+            maxAge: 600, // 10 minutes
+          });
+
+          const authorizeUrl = buildLinkedInAuthUrl({
+            redirectUri: getRedirectUri(request),
+            state,
+          });
+
+          return Response.redirect(authorizeUrl, 302);
+        } catch (e) {
+          const message = e instanceof Error ? e.message : "Unknown error";
+          console.error("LinkedIn OAuth start error:", message);
+          return new Response(
+            `LinkedIn OAuth start failed: ${message}`,
+            { status: 500, headers: { "Content-Type": "text/plain" } },
+          );
         }
-
-        // Verify the user via Supabase
-        const { data, error } = await supabaseAdmin.auth.getUser(accessToken);
-        if (error || !data?.user) {
-          return new Response("Invalid auth token", { status: 401 });
-        }
-        const userId = data.user.id;
-
-        // Random state — bind to user via httpOnly cookie
-        const state = crypto.randomUUID();
-        setCookie("li_oauth_state", `${state}.${userId}`, {
-          httpOnly: true,
-          secure: true,
-          sameSite: "lax",
-          path: "/",
-          maxAge: 600, // 10 minutes
-        });
-
-        const authorizeUrl = buildLinkedInAuthUrl({
-          redirectUri: getRedirectUri(request),
-          state,
-        });
-
-        return Response.redirect(authorizeUrl, 302);
       },
     },
   },
