@@ -60,9 +60,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PLATFORM_LIMITS, PLATFORM_LABEL, type Platform } from "@/lib/platform";
+import { PLATFORM_LIMITS, PLATFORM_LABEL, platformOpenUrl, type Platform } from "@/lib/platform";
 import { runPreflight, stripMarkdown } from "@/lib/preflight";
 import { useGeneratePosts, useGenerateTrendIdeas, useRewritePost } from "@/hooks/use-ai";
+import { publishPost } from "@/utils/social.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 const search = z.object({
   id: z.string().optional(),
