@@ -12,6 +12,14 @@ import {
   Send,
   Loader2,
   Lightbulb,
+  Bold,
+  Italic,
+  Heading,
+  List,
+  ListOrdered,
+  Link2,
+  Quote,
+  Code,
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -77,6 +85,132 @@ const emptyDraft = (platform: Platform = "linkedin"): Draft => ({
   variant_group_id: null,
 });
 
+type MdAction =
+  | { wrap: string; placeholder?: string }
+  | { linePrefix: string; placeholder?: string }
+  | { custom: (sel: string) => { text: string; cursorOffset?: number } };
+
+function applyMarkdown(
+  el: HTMLTextAreaElement,
+  current: string,
+  action: MdAction,
+  onChange: (next: string) => void,
+) {
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  const selected = current.slice(start, end);
+
+  let next = current;
+  let nextStart = start;
+  let nextEnd = end;
+
+  if ("wrap" in action) {
+    const inner = selected || action.placeholder || "";
+    const insertion = `${action.wrap}${inner}${action.wrap}`;
+    next = current.slice(0, start) + insertion + current.slice(end);
+    nextStart = start + action.wrap.length;
+    nextEnd = nextStart + inner.length;
+  } else if ("linePrefix" in action) {
+    // Find start of current line
+    const lineStart = current.lastIndexOf("\n", start - 1) + 1;
+    const before = current.slice(0, lineStart);
+    const lineAndAfter = current.slice(lineStart);
+    const inner = selected || action.placeholder || "";
+    if (selected) {
+      // Prefix every selected line
+      const selBlock = current.slice(lineStart, end);
+      const prefixed = selBlock
+        .split("\n")
+        .map((l) => `${action.linePrefix}${l}`)
+        .join("\n");
+      next = before + prefixed + current.slice(end);
+      nextStart = lineStart;
+      nextEnd = before.length + prefixed.length;
+    } else {
+      next =
+        before +
+        action.linePrefix +
+        inner +
+        lineAndAfter.slice(0);
+      nextStart = lineStart + action.linePrefix.length;
+      nextEnd = nextStart + inner.length;
+    }
+  } else {
+    const out = action.custom(selected);
+    next = current.slice(0, start) + out.text + current.slice(end);
+    nextStart = start + (out.cursorOffset ?? out.text.length);
+    nextEnd = nextStart;
+  }
+
+  onChange(next);
+  // restore focus + selection after React updates
+  requestAnimationFrame(() => {
+    el.focus();
+    el.setSelectionRange(nextStart, nextEnd);
+  });
+}
+
+type ToolbarItem = {
+  key: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  action: MdAction;
+};
+
+const TOOLBAR_ITEMS: ToolbarItem[] = [
+  { key: "bold", icon: Bold, label: "Bold", action: { wrap: "**", placeholder: "bold text" } },
+  { key: "italic", icon: Italic, label: "Italic", action: { wrap: "*", placeholder: "italic" } },
+  { key: "code", icon: Code, label: "Inline code", action: { wrap: "`", placeholder: "code" } },
+  { key: "h", icon: Heading, label: "Heading", action: { linePrefix: "## ", placeholder: "Heading" } },
+  { key: "ul", icon: List, label: "Bulleted list", action: { linePrefix: "- ", placeholder: "Item" } },
+  { key: "ol", icon: ListOrdered, label: "Numbered list", action: { linePrefix: "1. ", placeholder: "Item" } },
+  { key: "quote", icon: Quote, label: "Quote", action: { linePrefix: "> ", placeholder: "Quote" } },
+  {
+    key: "link",
+    icon: Link2,
+    label: "Link",
+    action: {
+      custom: (sel: string) => {
+        const text = sel || "link text";
+        const md = `[${text}](https://)`;
+        // place cursor inside url
+        return { text: md, cursorOffset: md.length - 1 };
+      },
+    },
+  },
+];
+
+function MarkdownToolbar({ onAction }: { onAction: (a: MdAction) => void }) {
+  return (
+    <div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-muted/30 px-2 py-1.5">
+      {TOOLBAR_ITEMS.map((item, i) => {
+        const Icon = item.icon;
+        return (
+          <div key={item.key} className="flex items-center">
+            {(item.key === "h" || item.key === "link") && (
+              <span className="mx-1 h-4 w-px bg-border" aria-hidden />
+            )}
+            <button
+              type="button"
+              title={item.label}
+              aria-label={item.label}
+              onMouseDown={(e) => {
+                // prevent textarea blur so selection is preserved
+                e.preventDefault();
+                onAction(item.action);
+              }}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <Icon className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        );
+      })}
+      <span className="ml-auto pr-1 text-[10px] text-muted-foreground">Markdown</span>
+    </div>
+  );
+}
+
 function Compose() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -87,6 +221,7 @@ function Compose() {
   const [trendOpen, setTrendOpen] = useState(false);
   const [loadingDraft, setLoadingDraft] = useState<boolean>(Boolean(params.id));
   const initial = useRef(true);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Load draft if id in url
   useEffect(() => {
@@ -229,7 +364,7 @@ function Compose() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-6 md:p-10">
+    <div className="mx-auto max-w-3xl p-6 md:p-10 animate-fade-in">
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Compose</h1>
@@ -265,16 +400,26 @@ function Compose() {
         </TabsList>
       </Tabs>
 
-      <div className="mt-4 rounded-xl border border-border bg-card">
+      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
+        <MarkdownToolbar
+          onAction={(action) => {
+            const el = textareaRef.current;
+            if (!el) return;
+            applyMarkdown(el, draft.content, action, (next) =>
+              setDraft((d) => ({ ...d, content: next })),
+            );
+          }}
+        />
         <Textarea
+          ref={textareaRef}
           value={draft.content}
           onChange={(e) => setDraft((d) => ({ ...d, content: e.target.value }))}
           placeholder={
             draft.platform === "linkedin"
-              ? "Write a long-form post for LinkedIn — opening hook, short paragraphs, soft CTA…"
+              ? "Write a long-form post for LinkedIn — opening hook, short paragraphs, soft CTA…\n\nMarkdown supported: **bold**, *italic*, # headings, - lists, > quotes."
               : "Say something punchy in 280 characters or less…"
           }
-          className="min-h-[300px] resize-none border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
+          className="min-h-[300px] resize-none rounded-none border-0 bg-transparent font-mono text-sm shadow-none focus-visible:ring-0 md:text-sm"
         />
         <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
           <div className="flex items-center gap-2 text-xs">
