@@ -87,7 +87,7 @@ function AuthPage() {
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Layers className="h-4 w-4" />
           </div>
-          <span className="font-semibold tracking-tight">SocialDeck</span>
+          <span className="font-semibold tracking-tight">Pimci</span>
         </Link>
         <ThemeToggle />
       </header>
@@ -129,7 +129,7 @@ function AuthPage() {
               {mode === "signin" ? "Welcome back" : "Create your account"}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              {mode === "signin" ? "Sign in to continue to SocialDeck." : "Start drafting in seconds."}
+              {mode === "signin" ? "Sign in to continue to Pimci." : "Start drafting in seconds."}
             </p>
           </div>
 
