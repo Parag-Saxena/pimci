@@ -7,18 +7,22 @@ import { generatePosts, generateTrendIdeas, rewritePost } from "@/utils/ai.funct
  * Wrap server-function calls so we attach the current user's auth header
  * (required by the requireSupabaseAuth middleware).
  */
-function useAuthedServerFn<TFn extends (...a: never[]) => Promise<unknown>>(fn: TFn) {
-  const sf = useServerFn(fn);
+function useAuthedServerFn<TArgs, TResult>(
+  fn: (args: TArgs) => Promise<TResult>,
+): (args: TArgs) => Promise<TResult> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sf = useServerFn(fn as any);
   return useCallback(
-    async (...args: Parameters<TFn>) => {
+    async (args: TArgs) => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
       const token = session?.access_token;
       if (!token) throw new Error("You must be signed in.");
-      // useServerFn supports a second options arg with headers
-      // @ts-expect-error - server-fn typing for headers option is loose
-      return sf(...args, { headers: { Authorization: `Bearer ${token}` } }) as ReturnType<TFn>;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (await (sf as any)(args, {
+        headers: { Authorization: `Bearer ${token}` },
+      })) as TResult;
     },
     [sf],
   );
