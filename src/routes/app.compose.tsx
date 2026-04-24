@@ -303,7 +303,7 @@ function Compose() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-6 md:p-10">
+    <div className="mx-auto max-w-3xl p-6 md:p-10 animate-fade-in">
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Compose</h1>
