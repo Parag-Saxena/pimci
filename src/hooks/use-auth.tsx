@@ -60,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    installServerFnAuth();
     // Set up listener FIRST
     const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
       setSession(sess);
