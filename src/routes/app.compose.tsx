@@ -229,6 +229,7 @@ function Compose() {
   const [publishing, setPublishing] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [trendOpen, setTrendOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
   const [loadingDraft, setLoadingDraft] = useState<boolean>(Boolean(params.id));
   const [view, setView] = useState<"write" | "preview">("write");
   const [dirty, setDirty] = useState(false);
