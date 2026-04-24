@@ -98,11 +98,30 @@ function Queue() {
 
   const copyAndOpen = async (p: PostRow) => {
     try {
-      await navigator.clipboard.writeText(p.content);
+      await navigator.clipboard.writeText(stripMarkdown(p.content).trim());
       window.open(platformOpenUrl(p.platform), "_blank");
       toast.success("Copied & opened " + PLATFORM_LABEL[p.platform]);
     } catch {
       toast.error("Could not copy");
+    }
+  };
+
+  const publishNow = async (p: PostRow) => {
+    setPublishingId(p.id);
+    try {
+      const result = await publishPostFn({ data: { postId: p.id } });
+      if (result.published) {
+        toast.success("Published to " + PLATFORM_LABEL[p.platform]);
+      } else if (result.manualFallback) {
+        await copyAndOpen(p);
+        toast.message(result.message);
+      }
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Publish failed");
+      load();
+    } finally {
+      setPublishingId(null);
     }
   };
 
