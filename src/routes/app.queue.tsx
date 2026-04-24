@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Copy, ExternalLink, Trash2, CheckCircle2, Sparkles, Filter } from "lucide-react";
+import { Copy, ExternalLink, Trash2, CheckCircle2, Sparkles, Filter, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,8 @@ import {
   platformOpenUrl,
   type Platform,
 } from "@/lib/platform";
+import { publishPost } from "@/utils/social.functions";
+import { stripMarkdown } from "@/lib/preflight";
 
 export const Route = createFileRoute("/app/queue")({
   component: Queue,
