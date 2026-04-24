@@ -150,6 +150,67 @@ function applyMarkdown(
   });
 }
 
+type ToolbarItem = {
+  key: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  action: MdAction;
+};
+
+const TOOLBAR_ITEMS: ToolbarItem[] = [
+  { key: "bold", icon: Bold, label: "Bold", action: { wrap: "**", placeholder: "bold text" } },
+  { key: "italic", icon: Italic, label: "Italic", action: { wrap: "*", placeholder: "italic" } },
+  { key: "code", icon: Code, label: "Inline code", action: { wrap: "`", placeholder: "code" } },
+  { key: "h", icon: Heading, label: "Heading", action: { linePrefix: "## ", placeholder: "Heading" } },
+  { key: "ul", icon: List, label: "Bulleted list", action: { linePrefix: "- ", placeholder: "Item" } },
+  { key: "ol", icon: ListOrdered, label: "Numbered list", action: { linePrefix: "1. ", placeholder: "Item" } },
+  { key: "quote", icon: Quote, label: "Quote", action: { linePrefix: "> ", placeholder: "Quote" } },
+  {
+    key: "link",
+    icon: Link2,
+    label: "Link",
+    action: {
+      custom: (sel: string) => {
+        const text = sel || "link text";
+        const md = `[${text}](https://)`;
+        // place cursor inside url
+        return { text: md, cursorOffset: md.length - 1 };
+      },
+    },
+  },
+];
+
+function MarkdownToolbar({ onAction }: { onAction: (a: MdAction) => void }) {
+  return (
+    <div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-muted/30 px-2 py-1.5">
+      {TOOLBAR_ITEMS.map((item, i) => {
+        const Icon = item.icon;
+        return (
+          <div key={item.key} className="flex items-center">
+            {(item.key === "h" || item.key === "link") && (
+              <span className="mx-1 h-4 w-px bg-border" aria-hidden />
+            )}
+            <button
+              type="button"
+              title={item.label}
+              aria-label={item.label}
+              onMouseDown={(e) => {
+                // prevent textarea blur so selection is preserved
+                e.preventDefault();
+                onAction(item.action);
+              }}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <Icon className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        );
+      })}
+      <span className="ml-auto pr-1 text-[10px] text-muted-foreground">Markdown</span>
+    </div>
+  );
+}
+
 function Compose() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
