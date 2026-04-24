@@ -38,11 +38,7 @@ function AppShell() {
   }, [user, loading, navigate]);
 
   if (loading || !user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    );
+    return <AppShellSkeleton />;
   }
 
   const initials = (user.user_metadata?.display_name || user.email || "U")
