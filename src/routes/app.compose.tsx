@@ -339,7 +339,15 @@ function Compose() {
     setDirty(false);
   }, [draft.id]);
 
-  const setPlatform = (p: Platform) => setDraft((d) => ({ ...d, platform: p }));
+  const setPlatform = (p: Platform) => {
+    setDraft((d) => ({ ...d, platform: p }));
+    setDirty(true);
+  };
+
+  const setScheduledAt = (iso: string | null) => {
+    setDraft((d) => ({ ...d, scheduled_at: iso }));
+    setDirty(true);
+  };
 
   const remove = async () => {
     if (!draft.id) {
