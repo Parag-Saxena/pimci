@@ -292,6 +292,13 @@ function Compose() {
         toast.error("Pick a date & time first");
         return null;
       }
+      if (intent !== "draft") {
+        const pf = runPreflight(merged.content, merged.platform);
+        if (!pf.ok) {
+          toast.error(pf.errors[0]?.message ?? "Fix preflight issues first");
+          return null;
+        }
+      }
       const isPublishing = intent === "published";
       if (isPublishing) setPublishing(true);
       else setSaving(true);
