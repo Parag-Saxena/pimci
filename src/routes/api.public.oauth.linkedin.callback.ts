@@ -13,8 +13,10 @@ function getRedirectUri(request: Request) {
 
 function htmlResult(opts: { ok: boolean; message: string }) {
   // Simple page that closes itself if opened in a popup, otherwise redirects to settings.
-  const safeMsg = opts.message.replace(/</g, "&lt;");
+  const safeMsg = opts.message.replace(/</g, "&lt;").replace(/"/g, "&quot;");
   const status = opts.ok ? "success" : "error";
+  // JSON-encode for safe embedding into the inline script
+  const messageJson = JSON.stringify(opts.message);
   return new Response(
     `<!doctype html>
 <html lang="en">
@@ -24,9 +26,9 @@ function htmlResult(opts: { ok: boolean; message: string }) {
   <title>${opts.ok ? "Connected" : "Connection failed"}</title>
   <style>
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;background:#0b1220;color:#e6edf3;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;padding:24px}
-    .card{max-width:420px;width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:16px;padding:28px;text-align:center}
+    .card{max-width:460px;width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:16px;padding:28px;text-align:center}
     h1{font-size:18px;margin:0 0 8px;font-weight:600}
-    p{color:#94a3b8;font-size:14px;margin:0 0 20px;line-height:1.5}
+    p{color:#94a3b8;font-size:14px;margin:0 0 20px;line-height:1.5;word-break:break-word}
     a{display:inline-block;background:${opts.ok ? "#3b7e9b" : "#f76e6e"};color:white;text-decoration:none;padding:9px 16px;border-radius:8px;font-size:14px;font-weight:500}
     .icon{font-size:36px;margin-bottom:12px}
   </style>
@@ -41,9 +43,10 @@ function htmlResult(opts: { ok: boolean; message: string }) {
   <script>
     try {
       if (window.opener) {
-        window.opener.postMessage({ type: "linkedin-oauth", status: "${status}" }, window.location.origin);
+        window.opener.postMessage({ type: "linkedin-oauth", status: "${status}", message: ${messageJson} }, window.location.origin);
         setTimeout(() => window.close(), 600);
       } else {
+        try { sessionStorage.setItem("linkedin-oauth-result", JSON.stringify({ status: "${status}", message: ${messageJson} })); } catch (e) {}
         setTimeout(() => { window.location.href = "/app/settings"; }, 1200);
       }
     } catch (e) {}
@@ -67,25 +70,40 @@ export const Route = createFileRoute("/api/public/oauth/linkedin/callback")({
         if (errorParam) {
           return htmlResult({
             ok: false,
-            message: errorDesc || errorParam,
+            message: `LinkedIn returned an error: ${errorDesc || errorParam}`,
           });
         }
         if (!code || !state) {
-          return htmlResult({ ok: false, message: "Missing code or state." });
+          return htmlResult({
+            ok: false,
+            message: "Missing authorization code or state parameter from LinkedIn.",
+          });
         }
 
+        // CSRF / state validation
         const cookieValue = getCookie("li_oauth_state");
         if (!cookieValue) {
           return htmlResult({
             ok: false,
-            message: "Session expired. Please try connecting again.",
+            message:
+              "Security check failed: state cookie is missing or expired. This can happen if cookies are blocked, you took longer than 10 minutes, or the popup was opened in a different browser. Please try connecting again.",
           });
         }
         const [cookieState, userId] = cookieValue.split(".");
-        if (cookieState !== state || !userId) {
+        if (!cookieState || !userId) {
+          deleteCookie("li_oauth_state");
           return htmlResult({
             ok: false,
-            message: "Invalid state. Please try again.",
+            message:
+              "Security check failed: state cookie is malformed. Please try connecting again.",
+          });
+        }
+        if (cookieState !== state) {
+          deleteCookie("li_oauth_state");
+          return htmlResult({
+            ok: false,
+            message:
+              "Security check failed: state parameter does not match (possible CSRF attempt or stale request). Please try connecting again.",
           });
         }
         deleteCookie("li_oauth_state");
