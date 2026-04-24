@@ -313,6 +313,7 @@ function ConnectedAccountsSection() {
         setLinkedinError(message);
         try { localStorage.setItem("linkedin-oauth-last-error", message); } catch (_e) { /* ignore */ }
         toast.error(message, { duration: 10000 });
+        logAttempt({ status: "error", stage: "start", message });
         return;
       }
     } catch (e) {
@@ -321,6 +322,7 @@ function ConnectedAccountsSection() {
       setLinkedinError(message);
       try { localStorage.setItem("linkedin-oauth-last-error", message); } catch (_e) { /* ignore */ }
       toast.error(message, { duration: 10000 });
+      logAttempt({ status: "error", stage: "start", message });
       return;
     }
 
