@@ -154,6 +154,10 @@ export function runPreflight(content: string, platform: Platform): PreflightResu
         severity: "error",
         message: `Too long for X — ${len.toLocaleString()} / ${limit} characters`,
         hint: "Each link counts as 23 characters on X. Shorten the body or remove a link.",
+        fix: {
+          label: `Shorten to ${limit}`,
+          apply: (c) => shortenForX(c, limit),
+        },
       });
     } else if (len > limit * 0.95) {
       warnings.push({
@@ -169,6 +173,10 @@ export function runPreflight(content: string, platform: Platform): PreflightResu
         id: "x-hashtags",
         severity: "warning",
         message: `${hashtags} hashtags — X posts perform best with ≤ ${MAX_HASHTAGS_X}.`,
+        fix: {
+          label: `Keep first ${MAX_HASHTAGS_X}`,
+          apply: (c) => limitHashtags(c, MAX_HASHTAGS_X),
+        },
       });
     }
 
@@ -178,6 +186,7 @@ export function runPreflight(content: string, platform: Platform): PreflightResu
         id: "x-multi-link",
         severity: "warning",
         message: "Multiple links — X usually surfaces only the first link preview.",
+        fix: { label: "Keep first link", apply: keepFirstLink },
       });
     }
 
@@ -197,6 +206,7 @@ export function runPreflight(content: string, platform: Platform): PreflightResu
         severity: "warning",
         message: "Markdown won't render on X",
         hint: `Will post as raw text: ${found.join(", ")}`,
+        fix: { label: "Strip markdown", apply: stripMarkdown },
       });
     }
 
@@ -205,6 +215,7 @@ export function runPreflight(content: string, platform: Platform): PreflightResu
         id: "x-blank-lines",
         severity: "warning",
         message: "Multiple blank lines waste characters on X.",
+        fix: { label: "Collapse blank lines", apply: collapseBlankLines },
       });
     }
   } else {
@@ -216,6 +227,10 @@ export function runPreflight(content: string, platform: Platform): PreflightResu
         severity: "error",
         message: `Too long for ${label} — ${len.toLocaleString()} / ${limit.toLocaleString()} characters`,
         hint: "Trim the body or split into a follow-up post.",
+        fix: {
+          label: `Shorten to ${limit.toLocaleString()}`,
+          apply: (c) => truncateToCodePoints(c, limit),
+        },
       });
     } else if (len > limit * 0.95) {
       warnings.push({
@@ -231,6 +246,10 @@ export function runPreflight(content: string, platform: Platform): PreflightResu
         id: "li-hashtags",
         severity: "warning",
         message: `${hashtags} hashtags — LinkedIn favors ≤ ${MAX_HASHTAGS_LINKEDIN} relevant tags.`,
+        fix: {
+          label: `Keep first ${MAX_HASHTAGS_LINKEDIN}`,
+          apply: (c) => limitHashtags(c, MAX_HASHTAGS_LINKEDIN),
+        },
       });
     }
 
@@ -259,6 +278,7 @@ export function runPreflight(content: string, platform: Platform): PreflightResu
         severity: "warning",
         message: "Markdown won't render on LinkedIn",
         hint: `Posts as raw text: ${found.join(", ")}. Use line breaks and emoji for emphasis instead.`,
+        fix: { label: "Strip markdown", apply: stripMarkdown },
       });
     }
 
