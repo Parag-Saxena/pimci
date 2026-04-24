@@ -667,3 +667,72 @@ function TrendDialog({
     </Dialog>
   );
 }
+
+function ComposeSkeleton() {
+  return (
+    <div
+      className="mx-auto max-w-3xl p-6 md:p-10"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      {/* Header */}
+      <div className="mb-5 flex items-center justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-6 w-28" />
+          <Skeleton className="h-3 w-40" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-24 rounded-md" />
+          <Skeleton className="h-8 w-28 rounded-md" />
+          <Skeleton className="h-8 w-24 rounded-md" />
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2">
+        <Skeleton className="h-9 w-24 rounded-md" />
+        <Skeleton className="h-9 w-16 rounded-md" />
+      </div>
+
+      {/* Editor card */}
+      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
+        <div className="space-y-3 p-4">
+          <Skeleton className="h-4 w-[85%]" />
+          <Skeleton className="h-4 w-[70%]" />
+          <Skeleton className="h-4 w-[90%]" />
+          <Skeleton className="h-4 w-[60%]" />
+          <Skeleton className="h-4 w-[40%]" />
+          <div className="h-32" />
+        </div>
+        {/* Counter bar */}
+        <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-1.5 w-24 rounded-full" />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Skeleton className="h-7 w-20 rounded-md" />
+            <Skeleton className="h-7 w-16 rounded-md" />
+          </div>
+        </div>
+      </div>
+
+      {/* Schedule card */}
+      <div className="mt-6 grid gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-[auto_1fr_auto] sm:items-end">
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-44" />
+          <Skeleton className="h-9 w-full rounded-md" />
+        </div>
+        <Skeleton className="h-9 w-20 rounded-md" />
+      </div>
+
+      <div className="mt-3 flex justify-center">
+        <Skeleton className="h-3 w-72" />
+      </div>
+    </div>
+  );
+}
