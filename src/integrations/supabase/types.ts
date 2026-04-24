@@ -44,6 +44,54 @@ export type Database = {
         }
         Relationships: []
       }
+      connected_accounts: {
+        Row: {
+          access_token: string
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          expires_at: string | null
+          handle: string | null
+          id: string
+          platform: Database["public"]["Enums"]["platform"]
+          platform_user_id: string
+          refresh_token: string | null
+          scope: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          expires_at?: string | null
+          handle?: string | null
+          id?: string
+          platform: Database["public"]["Enums"]["platform"]
+          platform_user_id: string
+          refresh_token?: string | null
+          scope?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          expires_at?: string | null
+          handle?: string | null
+          id?: string
+          platform?: Database["public"]["Enums"]["platform"]
+          platform_user_id?: string
+          refresh_token?: string | null
+          scope?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_variants: {
         Row: {
           brief: string
