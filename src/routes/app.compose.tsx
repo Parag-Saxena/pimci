@@ -530,38 +530,69 @@ function Compose() {
       </div>
 
       {/* Schedule */}
-      <div className="mt-6 grid gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-[auto_1fr_auto] sm:items-end">
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Schedule</Label>
-          <div className="flex items-center gap-2 text-sm">
-            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-            {draft.scheduled_at ? (
-              format(new Date(draft.scheduled_at), "EEE, MMM d · h:mm a")
-            ) : (
-              <span className="text-muted-foreground">Not scheduled</span>
-            )}
+      <div className="mt-6 rounded-xl border border-border bg-card p-5">
+        <div className="grid gap-4 sm:grid-cols-2 sm:items-end">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Schedule</Label>
+            <div className="flex items-center gap-2 text-sm">
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+              {draft.scheduled_at ? (
+                format(new Date(draft.scheduled_at), "EEE, MMM d · h:mm a")
+              ) : (
+                <span className="text-muted-foreground">Not scheduled</span>
+              )}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="dt" className="text-xs text-muted-foreground">
+              Date & time (your local timezone)
+            </Label>
+            <Input
+              id="dt"
+              type="datetime-local"
+              value={draft.scheduled_at ? toLocalInput(draft.scheduled_at) : ""}
+              onChange={(e) =>
+                setScheduledAt(e.target.value ? new Date(e.target.value).toISOString() : null)
+              }
+            />
           </div>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="dt" className="text-xs text-muted-foreground">
-            Date & time (your local timezone)
-          </Label>
-          <Input
-            id="dt"
-            type="datetime-local"
-            value={draft.scheduled_at ? toLocalInput(draft.scheduled_at) : ""}
-            onChange={(e) =>
-              setDraft((d) => ({
-                ...d,
-                scheduled_at: e.target.value ? new Date(e.target.value).toISOString() : null,
-              }))
+
+        <div className="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
+          <Button
+            variant="outline"
+            onClick={() => save("draft")}
+            disabled={saving || publishing || !draft.content.trim()}
+          >
+            {saving ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-1.5 h-4 w-4" />
+            )}
+            Save draft
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => save("scheduled")}
+            disabled={
+              saving || publishing || !draft.content.trim() || !draft.scheduled_at
             }
-          />
+          >
+            <CalendarClock className="mr-1.5 h-4 w-4" />
+            Schedule post
+          </Button>
+          <Button
+            onClick={() => save("published")}
+            disabled={saving || publishing || !draft.content.trim()}
+          >
+            {publishing ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="mr-1.5 h-4 w-4" />
+            )}
+            Post now
+          </Button>
         </div>
-        <Button onClick={() => save()} disabled={saving || !draft.content.trim()}>
-          {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
-          Save
-        </Button>
       </div>
 
       <p className="mt-3 text-center text-xs text-muted-foreground">
