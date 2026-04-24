@@ -275,6 +275,11 @@ function Compose() {
   const counterColor =
     len > limit ? "text-destructive" : pct > 0.9 ? "text-warning" : "text-muted-foreground";
 
+  const preflight = useMemo(
+    () => runPreflight(draft.content, draft.platform),
+    [draft.content, draft.platform],
+  );
+
   type SaveStatus = "draft" | "scheduled" | "published";
   const save = useCallback(
     async (
