@@ -387,6 +387,7 @@ function RewriteMenu({
       const res = await rewrite({
         data: { content: draft.content, platform: draft.platform, action },
       });
+      if (!res || typeof res.content !== "string") throw new Error("No content returned");
       setDraft((d) => ({ ...d, content: res.content }));
       toast.success("Rewritten");
     } catch (e) {
