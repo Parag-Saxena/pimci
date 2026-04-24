@@ -11,10 +11,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
       visibleToasts={6}
       gap={10}
       icons={{
-        success: <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
+        success: <CheckCircle2 className="h-4 w-4 text-success" />,
         error: <XCircle className="h-4 w-4 text-destructive" />,
-        warning: <AlertTriangle className="h-4 w-4 text-amber-500" />,
-        info: <Info className="h-4 w-4 text-sky-500" />,
+        warning: <AlertTriangle className="h-4 w-4 text-warning" />,
+        info: <Info className="h-4 w-4 text-primary" />,
         loading: <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />,
       }}
       toastOptions={{
@@ -28,12 +28,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
           cancelButton:
             "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground group-[.toast]:rounded-md",
           success:
-            "group-[.toaster]:border-emerald-500/30 group-[.toaster]:bg-emerald-500/5",
+            "group-[.toaster]:border-success/40 group-[.toaster]:bg-success/10",
           error:
-            "group-[.toaster]:border-destructive/30 group-[.toaster]:bg-destructive/5",
+            "group-[.toaster]:border-destructive/40 group-[.toaster]:bg-destructive/10",
           warning:
-            "group-[.toaster]:border-amber-500/30 group-[.toaster]:bg-amber-500/5",
-          info: "group-[.toaster]:border-sky-500/30 group-[.toaster]:bg-sky-500/5",
+            "group-[.toaster]:border-warning/50 group-[.toaster]:bg-warning/15",
+          info: "group-[.toaster]:border-primary/30 group-[.toaster]:bg-primary/5",
         },
       }}
       {...props}
@@ -42,5 +42,3 @@ const Toaster = ({ ...props }: ToasterProps) => {
 };
 
 export { Toaster };
-</content>
-</invoke>
