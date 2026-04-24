@@ -77,13 +77,14 @@ const emptyDraft = (platform: Platform = "linkedin"): Draft => ({
 });
 
 function Compose() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const params = useSearch({ from: "/app/compose" });
   const [draft, setDraft] = useState<Draft>(emptyDraft(params.platform ?? "linkedin"));
   const [saving, setSaving] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [trendOpen, setTrendOpen] = useState(false);
+  const [loadingDraft, setLoadingDraft] = useState<boolean>(Boolean(params.id));
   const initial = useRef(true);
 
   // Load draft if id in url
