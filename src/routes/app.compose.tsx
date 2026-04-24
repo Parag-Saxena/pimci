@@ -24,6 +24,8 @@ import {
   Pencil,
   CalendarClock,
   CheckCircle2,
+  AlertTriangle,
+  AlertCircle,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -59,6 +61,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PLATFORM_LIMITS, type Platform } from "@/lib/platform";
+import { runPreflight } from "@/lib/preflight";
 import { useGeneratePosts, useGenerateTrendIdeas, useRewritePost } from "@/hooks/use-ai";
 
 const search = z.object({
@@ -272,6 +275,11 @@ function Compose() {
   const counterColor =
     len > limit ? "text-destructive" : pct > 0.9 ? "text-warning" : "text-muted-foreground";
 
+  const preflight = useMemo(
+    () => runPreflight(draft.content, draft.platform),
+    [draft.content, draft.platform],
+  );
+
   type SaveStatus = "draft" | "scheduled" | "published";
   const save = useCallback(
     async (
@@ -283,6 +291,13 @@ function Compose() {
       if (intent === "scheduled" && !merged.scheduled_at) {
         toast.error("Pick a date & time first");
         return null;
+      }
+      if (intent !== "draft") {
+        const pf = runPreflight(merged.content, merged.platform);
+        if (!pf.ok) {
+          toast.error(pf.errors[0]?.message ?? "Fix preflight issues first");
+          return null;
+        }
       }
       const isPublishing = intent === "published";
       if (isPublishing) setPublishing(true);
@@ -558,6 +573,8 @@ function Compose() {
           </div>
         </div>
 
+        <PreflightPanel platform={draft.platform} preflight={preflight} />
+
         <div className="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
           <Button
             variant="outline"
@@ -575,15 +592,21 @@ function Compose() {
             variant="secondary"
             onClick={() => save("scheduled")}
             disabled={
-              saving || publishing || !draft.content.trim() || !draft.scheduled_at
+              saving ||
+              publishing ||
+              !draft.content.trim() ||
+              !draft.scheduled_at ||
+              !preflight.ok
             }
+            title={!preflight.ok ? "Resolve preflight errors first" : undefined}
           >
             <CalendarClock className="mr-1.5 h-4 w-4" />
             Schedule post
           </Button>
           <Button
             onClick={() => save("published")}
-            disabled={saving || publishing || !draft.content.trim()}
+            disabled={saving || publishing || !draft.content.trim() || !preflight.ok}
+            title={!preflight.ok ? "Resolve preflight errors first" : undefined}
           >
             {publishing ? (
               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
@@ -632,6 +655,70 @@ function toLocalInput(iso: string) {
   const d = new Date(iso);
   const off = d.getTimezoneOffset() * 60000;
   return new Date(d.getTime() - off).toISOString().slice(0, 16);
+}
+
+function PreflightPanel({
+  platform,
+  preflight,
+}: {
+  platform: Platform;
+  preflight: ReturnType<typeof runPreflight>;
+}) {
+  const { errors, warnings, ok } = preflight;
+  const label = platform === "linkedin" ? "LinkedIn" : "X";
+
+  if (errors.length === 0 && warnings.length === 0) {
+    return (
+      <div className="mt-4 flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 px-3 py-2 text-xs text-success-foreground">
+        <CheckCircle2 className="h-3.5 w-3.5" />
+        <span>Preflight passed for {label}.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 space-y-2">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-muted-foreground">{label} preflight</p>
+        <span
+          className={cn(
+            "rounded-full px-2 py-0.5 text-[10px] font-medium",
+            ok ? "bg-warning/20 text-foreground" : "bg-destructive/15 text-destructive",
+          )}
+        >
+          {ok
+            ? `${warnings.length} warning${warnings.length === 1 ? "" : "s"}`
+            : `${errors.length} blocker${errors.length === 1 ? "" : "s"}`}
+        </span>
+      </div>
+      <ul className="space-y-1.5">
+        {errors.map((it) => (
+          <li
+            key={it.id}
+            className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs animate-fade-in"
+          >
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+            <div>
+              <p className="font-medium text-destructive">{it.message}</p>
+              {it.hint && <p className="mt-0.5 text-muted-foreground">{it.hint}</p>}
+            </div>
+          </li>
+        ))}
+        {warnings.map((it) => (
+          <li
+            key={it.id}
+            className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/15 px-3 py-2 text-xs animate-fade-in"
+          >
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-foreground/70" />
+            <div>
+              <p className="font-medium">{it.message}</p>
+              {it.hint && <p className="mt-0.5 text-muted-foreground">{it.hint}</p>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function RewriteMenu({
