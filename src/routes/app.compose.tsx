@@ -603,15 +603,16 @@ function Compose() {
         open={aiOpen}
         onOpenChange={setAiOpen}
         platform={draft.platform}
-        onPick={(content, brief, variantGroupId) =>
+        onPick={(content, brief, variantGroupId) => {
           setDraft((d) => ({
             ...d,
             content,
             ai_generated: true,
             source_brief: brief,
             variant_group_id: variantGroupId,
-          }))
-        }
+          }));
+          setDirty(true);
+        }}
       />
       <TrendDialog
         open={trendOpen}
