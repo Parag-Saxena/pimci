@@ -206,7 +206,7 @@ function ConnectedAccountsSection() {
     }
   }, [listFn]);
 
-  // Load last persisted LinkedIn error on mount
+  // Load last persisted LinkedIn error + history on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem("linkedin-oauth-last-error");
@@ -214,6 +214,7 @@ function ConnectedAccountsSection() {
     } catch (_e) {
       // ignore
     }
+    setLinkedinHistory(getLinkedInHistory());
   }, []);
 
   // If the popup wrote a result to sessionStorage (popup-blocked fallback), pick it up.
@@ -227,15 +228,25 @@ function ConnectedAccountsSection() {
         setLinkedinError(null);
         localStorage.removeItem("linkedin-oauth-last-error");
         toast.success(parsed.message || "LinkedIn connected");
+        logAttempt({
+          status: "success",
+          stage: "callback",
+          message: parsed.message || "Connected.",
+        });
       } else if (parsed.message) {
         setLinkedinError(parsed.message);
         localStorage.setItem("linkedin-oauth-last-error", parsed.message);
         toast.error(parsed.message, { duration: 8000 });
+        logAttempt({
+          status: "error",
+          stage: "callback",
+          message: parsed.message,
+        });
       }
     } catch (_e) {
       // ignore
     }
-  }, []);
+  }, [logAttempt]);
 
   useEffect(() => {
     refresh();
@@ -252,18 +263,28 @@ function ConnectedAccountsSection() {
           setLinkedinError(null);
           try { localStorage.removeItem("linkedin-oauth-last-error"); } catch (_e) { /* ignore */ }
           toast.success(msg.message || "LinkedIn connected");
+          logAttempt({
+            status: "success",
+            stage: "callback",
+            message: msg.message || "Connected.",
+          });
           refresh();
         } else {
           const errMsg = msg.message || "LinkedIn connection failed";
           setLinkedinError(errMsg);
           try { localStorage.setItem("linkedin-oauth-last-error", errMsg); } catch (_e) { /* ignore */ }
           toast.error(errMsg, { duration: 8000 });
+          logAttempt({
+            status: "error",
+            stage: "callback",
+            message: errMsg,
+          });
         }
       }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [refresh]);
+  }, [refresh, logAttempt]);
 
   const linkedin = accounts.find((a) => a.platform === "linkedin");
   const x = accounts.find((a) => a.platform === "x");
