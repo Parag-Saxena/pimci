@@ -51,6 +51,8 @@ function Queue() {
   const [platform, setPlatform] = useState<PlatformFilter>("all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
+  const publishPostFn = useServerFn(publishPost);
 
   const load = async () => {
     if (!user) return;
