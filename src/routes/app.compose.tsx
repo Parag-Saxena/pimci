@@ -229,6 +229,7 @@ function Compose() {
   const [publishing, setPublishing] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [trendOpen, setTrendOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
   const [loadingDraft, setLoadingDraft] = useState<boolean>(Boolean(params.id));
   const [view, setView] = useState<"write" | "preview">("write");
   const [dirty, setDirty] = useState(false);
@@ -516,7 +517,7 @@ function Compose() {
           </div>
         )}
 
-        <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-2.5">
           <div className="flex items-center gap-2 text-xs">
             <span className={cn("tabular-nums", counterColor)}>
               {len.toLocaleString()} / {limit.toLocaleString()}
@@ -530,8 +531,22 @@ function Compose() {
                 style={{ width: `${Math.min(pct, 1) * 100}%` }}
               />
             </div>
+            {draft.scheduled_at && (
+              <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] text-secondary-foreground">
+                <CalendarClock className="h-3 w-3" />
+                {format(new Date(draft.scheduled_at), "MMM d · h:mm a")}
+                <button
+                  type="button"
+                  onClick={() => setScheduledAt(null)}
+                  className="ml-0.5 text-muted-foreground hover:text-foreground"
+                  aria-label="Clear schedule"
+                >
+                  ×
+                </button>
+              </span>
+            )}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <Button variant="ghost" size="sm" onClick={duplicate} disabled={!draft.content}>
               <Copy className="mr-1.5 h-3.5 w-3.5" />
               Duplicate
@@ -540,87 +555,72 @@ function Compose() {
               <Trash2 className="mr-1.5 h-3.5 w-3.5" />
               Delete
             </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Schedule */}
-      <div className="mt-6 rounded-xl border border-border bg-card p-5">
-        <div className="grid gap-4 sm:grid-cols-2 sm:items-end">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Schedule</Label>
-            <div className="flex items-center gap-2 text-sm">
-              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-              {draft.scheduled_at ? (
-                format(new Date(draft.scheduled_at), "EEE, MMM d · h:mm a")
+            <span className="mx-1 hidden h-5 w-px bg-border sm:inline-block" aria-hidden />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => save("draft")}
+              disabled={saving || publishing || !draft.content.trim()}
+            >
+              {saving ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
               ) : (
-                <span className="text-muted-foreground">Not scheduled</span>
+                <Save className="mr-1.5 h-3.5 w-3.5" />
               )}
-            </div>
+              Save draft
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setScheduleOpen(true)}
+              disabled={saving || publishing || !draft.content.trim() || !preflight.ok}
+              title={!preflight.ok ? "Resolve preflight errors first" : undefined}
+            >
+              <CalendarClock className="mr-1.5 h-3.5 w-3.5" />
+              {draft.scheduled_at ? "Reschedule" : "Schedule"}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => save("published")}
+              disabled={saving || publishing || !draft.content.trim() || !preflight.ok}
+              title={!preflight.ok ? "Resolve preflight errors first" : undefined}
+            >
+              {publishing ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Post now
+            </Button>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="dt" className="text-xs text-muted-foreground">
-              Date & time (your local timezone)
-            </Label>
-            <Input
-              id="dt"
-              type="datetime-local"
-              value={draft.scheduled_at ? toLocalInput(draft.scheduled_at) : ""}
-              onChange={(e) =>
-                setScheduledAt(e.target.value ? new Date(e.target.value).toISOString() : null)
-              }
-            />
-          </div>
-        </div>
-
-        <PreflightPanel platform={draft.platform} preflight={preflight} />
-
-        <div className="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
-          <Button
-            variant="outline"
-            onClick={() => save("draft")}
-            disabled={saving || publishing || !draft.content.trim()}
-          >
-            {saving ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="mr-1.5 h-4 w-4" />
-            )}
-            Save draft
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => save("scheduled")}
-            disabled={
-              saving ||
-              publishing ||
-              !draft.content.trim() ||
-              !draft.scheduled_at ||
-              !preflight.ok
-            }
-            title={!preflight.ok ? "Resolve preflight errors first" : undefined}
-          >
-            <CalendarClock className="mr-1.5 h-4 w-4" />
-            Schedule post
-          </Button>
-          <Button
-            onClick={() => save("published")}
-            disabled={saving || publishing || !draft.content.trim() || !preflight.ok}
-            title={!preflight.ok ? "Resolve preflight errors first" : undefined}
-          >
-            {publishing ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : (
-              <CheckCircle2 className="mr-1.5 h-4 w-4" />
-            )}
-            Post now
-          </Button>
         </div>
       </div>
+
+      <PreflightPanel
+        platform={draft.platform}
+        preflight={preflight}
+        content={draft.content}
+        onApplyFix={(next) => {
+          setDraft((d) => ({ ...d, content: next }));
+          setDirty(true);
+        }}
+      />
 
       <p className="mt-3 text-center text-xs text-muted-foreground">
         Best times · LinkedIn: Tue–Thu 8–10am · X: Mon–Fri 12–3pm
       </p>
+
+      <ScheduleDialog
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
+        value={draft.scheduled_at}
+        saving={saving}
+        onConfirm={async (iso) => {
+          setScheduledAt(iso);
+          const res = await save("scheduled", { scheduled_at: iso });
+          if (res) setScheduleOpen(false);
+        }}
+      />
 
       <GenerateDialog
         open={aiOpen}
@@ -660,12 +660,26 @@ function toLocalInput(iso: string) {
 function PreflightPanel({
   platform,
   preflight,
+  content,
+  onApplyFix,
 }: {
   platform: Platform;
   preflight: ReturnType<typeof runPreflight>;
+  content: string;
+  onApplyFix?: (next: string) => void;
 }) {
   const { errors, warnings, ok } = preflight;
   const label = platform === "linkedin" ? "LinkedIn" : "X";
+  const fixable = [...errors, ...warnings].filter((i) => i.fix);
+
+  const applyAllFixes = () => {
+    if (!onApplyFix) return;
+    let next = content;
+    for (const it of fixable) {
+      if (it.fix) next = it.fix.apply(next);
+    }
+    onApplyFix(next);
+  };
 
   if (errors.length === 0 && warnings.length === 0) {
     return (
@@ -680,44 +694,141 @@ function PreflightPanel({
     <div className="mt-4 space-y-2">
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium text-muted-foreground">{label} preflight</p>
-        <span
-          className={cn(
-            "rounded-full px-2 py-0.5 text-[10px] font-medium",
-            ok ? "bg-warning/20 text-foreground" : "bg-destructive/15 text-destructive",
+        <div className="flex items-center gap-2">
+          {onApplyFix && fixable.length > 1 && (
+            <button
+              type="button"
+              onClick={applyAllFixes}
+              className="text-[10px] font-medium text-primary hover:underline"
+            >
+              Fix all ({fixable.length})
+            </button>
           )}
-        >
-          {ok
-            ? `${warnings.length} warning${warnings.length === 1 ? "" : "s"}`
-            : `${errors.length} blocker${errors.length === 1 ? "" : "s"}`}
-        </span>
+          <span
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[10px] font-medium",
+              ok ? "bg-warning/20 text-foreground" : "bg-destructive/15 text-destructive",
+            )}
+          >
+            {ok
+              ? `${warnings.length} warning${warnings.length === 1 ? "" : "s"}`
+              : `${errors.length} blocker${errors.length === 1 ? "" : "s"}`}
+          </span>
+        </div>
       </div>
       <ul className="space-y-1.5">
-        {errors.map((it) => (
-          <li
-            key={it.id}
-            className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs animate-fade-in"
-          >
-            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
-            <div>
-              <p className="font-medium text-destructive">{it.message}</p>
-              {it.hint && <p className="mt-0.5 text-muted-foreground">{it.hint}</p>}
-            </div>
-          </li>
-        ))}
-        {warnings.map((it) => (
-          <li
-            key={it.id}
-            className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/15 px-3 py-2 text-xs animate-fade-in"
-          >
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-foreground/70" />
-            <div>
-              <p className="font-medium">{it.message}</p>
-              {it.hint && <p className="mt-0.5 text-muted-foreground">{it.hint}</p>}
-            </div>
-          </li>
-        ))}
+        {[...errors, ...warnings].map((it) => {
+          const isError = it.severity === "error";
+          return (
+            <li
+              key={it.id}
+              className={cn(
+                "flex items-start gap-2 rounded-lg border px-3 py-2 text-xs animate-fade-in",
+                isError
+                  ? "border-destructive/30 bg-destructive/10"
+                  : "border-warning/40 bg-warning/15",
+              )}
+            >
+              {isError ? (
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+              ) : (
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-foreground/70" />
+              )}
+              <div className="flex-1">
+                <p className={cn("font-medium", isError && "text-destructive")}>{it.message}</p>
+                {it.hint && <p className="mt-0.5 text-muted-foreground">{it.hint}</p>}
+              </div>
+              {it.fix && onApplyFix && (
+                <button
+                  type="button"
+                  onClick={() => onApplyFix(it.fix!.apply(content))}
+                  className="shrink-0 rounded-md border border-border bg-background px-2 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  {it.fix.label}
+                </button>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
+  );
+}
+
+function ScheduleDialog({
+  open,
+  onOpenChange,
+  value,
+  saving,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  value: string | null;
+  saving: boolean;
+  onConfirm: (iso: string) => void;
+}) {
+  const [local, setLocal] = useState<string>(value ? toLocalInput(value) : "");
+
+  useEffect(() => {
+    if (open) setLocal(value ? toLocalInput(value) : "");
+  }, [open, value]);
+
+  const minLocal = toLocalInput(new Date(Date.now() + 60_000).toISOString());
+  const iso = local ? new Date(local).toISOString() : null;
+  const inPast = iso ? new Date(iso).getTime() < Date.now() : false;
+  const canConfirm = Boolean(iso) && !inPast && !saving;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CalendarClock className="h-4 w-4 text-primary" /> Schedule post
+          </DialogTitle>
+          <DialogDescription>
+            Pick a date & time in your local timezone. We'll surface the post in your queue when it's ready.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="dt-modal" className="text-xs text-muted-foreground">
+              Date & time
+            </Label>
+            <Input
+              id="dt-modal"
+              type="datetime-local"
+              value={local}
+              min={minLocal}
+              onChange={(e) => setLocal(e.target.value)}
+            />
+          </div>
+          {iso && (
+            <p className={cn("text-xs", inPast ? "text-destructive" : "text-muted-foreground")}>
+              {inPast
+                ? "Pick a time in the future."
+                : `Will publish ${format(new Date(iso), "EEE, MMM d · h:mm a")}.`}
+            </p>
+          )}
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!canConfirm}
+              onClick={() => iso && onConfirm(iso)}
+            >
+              {saving ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <CalendarClock className="mr-1.5 h-4 w-4" />
+              )}
+              Confirm schedule
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
