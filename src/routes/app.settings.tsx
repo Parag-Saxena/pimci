@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Loader2, Plug, Unplug, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  listConnectedAccounts,
+  disconnectAccount,
+  type ConnectedAccountSummary,
+} from "@/utils/social.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/app/settings")({
   component: SettingsPage,
@@ -143,23 +150,8 @@ function SettingsPage() {
         </div>
       </section>
 
-      <section className="mt-6 rounded-xl border border-border bg-card p-6">
-        <h2 className="text-sm font-medium">Connected accounts</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Direct publishing to LinkedIn and X requires registering developer apps on each platform.
-          For now, schedule posts and use one-click "Copy & open" from your queue.
-        </p>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          <div className="rounded-lg border border-dashed border-border p-3 text-sm">
-            <div className="font-medium text-linkedin">LinkedIn</div>
-            <div className="text-xs text-muted-foreground">Connection: coming soon</div>
-          </div>
-          <div className="rounded-lg border border-dashed border-border p-3 text-sm">
-            <div className="font-medium">X</div>
-            <div className="text-xs text-muted-foreground">Connection: coming soon</div>
-          </div>
-        </div>
-      </section>
+      <ConnectedAccountsSection />
+
 
       <section className="mt-6 rounded-xl border border-border bg-card p-6">
         <h2 className="text-sm font-medium">Account</h2>
