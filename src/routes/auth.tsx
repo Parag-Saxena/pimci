@@ -76,8 +76,51 @@ function AuthPage() {
     }
   };
 
+  const showSkeleton = loading || (!loading && !!user);
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <header className="flex h-14 items-center justify-between px-6">
+        <Link to="/" className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <Layers className="h-4 w-4" />
+          </div>
+          <span className="font-semibold tracking-tight">SocialDeck</span>
+        </Link>
+        <ThemeToggle />
+      </header>
+
+      {showSkeleton ? (
+        <main className="flex flex-1 items-center justify-center px-6 py-10">
+          <div className="w-full max-w-sm" aria-busy="true" aria-live="polite">
+            <div className="mb-8 flex flex-col items-center gap-2">
+              <Skeleton className="h-7 w-44" />
+              <Skeleton className="h-4 w-56" />
+            </div>
+            <Skeleton className="h-10 w-full rounded-md" />
+            <div className="my-6 flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <Skeleton className="h-3 w-4" />
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Skeleton className="h-3 w-12" />
+                <Skeleton className="h-10 w-full rounded-md" />
+              </div>
+              <div className="space-y-1.5">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-10 w-full rounded-md" />
+              </div>
+              <Skeleton className="h-10 w-full rounded-md" />
+            </div>
+            <div className="mt-6 flex justify-center">
+              <Skeleton className="h-3 w-48" />
+            </div>
+          </div>
+        </main>
+      ) : (
+        <main className="flex flex-1 items-center justify-center px-6 py-10">
       <header className="flex h-14 items-center justify-between px-6">
         <Link to="/" className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
