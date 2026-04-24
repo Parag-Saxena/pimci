@@ -178,8 +178,22 @@ function ConnectedAccountsSection() {
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<null | "linkedin" | "x">(null);
   const [linkedinError, setLinkedinError] = useState<string | null>(null);
+  const [linkedinHistory, setLinkedinHistory] = useState<LinkedInAttempt[]>([]);
   const listFn = useServerFn(listConnectedAccounts);
   const disconnectFn = useServerFn(disconnectAccount);
+
+  const logAttempt = useCallback(
+    (entry: Parameters<typeof recordLinkedInAttempt>[0]) => {
+      const next = recordLinkedInAttempt(entry);
+      setLinkedinHistory(next);
+    },
+    [],
+  );
+
+  const clearHistory = useCallback(() => {
+    clearLinkedInHistory();
+    setLinkedinHistory([]);
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
