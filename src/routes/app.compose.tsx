@@ -659,12 +659,26 @@ function toLocalInput(iso: string) {
 function PreflightPanel({
   platform,
   preflight,
+  content,
+  onApplyFix,
 }: {
   platform: Platform;
   preflight: ReturnType<typeof runPreflight>;
+  content: string;
+  onApplyFix?: (next: string) => void;
 }) {
   const { errors, warnings, ok } = preflight;
   const label = platform === "linkedin" ? "LinkedIn" : "X";
+  const fixable = [...errors, ...warnings].filter((i) => i.fix);
+
+  const applyAllFixes = () => {
+    if (!onApplyFix) return;
+    let next = content;
+    for (const it of fixable) {
+      if (it.fix) next = it.fix.apply(next);
+    }
+    onApplyFix(next);
+  };
 
   if (errors.length === 0 && warnings.length === 0) {
     return (
@@ -679,44 +693,141 @@ function PreflightPanel({
     <div className="mt-4 space-y-2">
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium text-muted-foreground">{label} preflight</p>
-        <span
-          className={cn(
-            "rounded-full px-2 py-0.5 text-[10px] font-medium",
-            ok ? "bg-warning/20 text-foreground" : "bg-destructive/15 text-destructive",
+        <div className="flex items-center gap-2">
+          {onApplyFix && fixable.length > 1 && (
+            <button
+              type="button"
+              onClick={applyAllFixes}
+              className="text-[10px] font-medium text-primary hover:underline"
+            >
+              Fix all ({fixable.length})
+            </button>
           )}
-        >
-          {ok
-            ? `${warnings.length} warning${warnings.length === 1 ? "" : "s"}`
-            : `${errors.length} blocker${errors.length === 1 ? "" : "s"}`}
-        </span>
+          <span
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[10px] font-medium",
+              ok ? "bg-warning/20 text-foreground" : "bg-destructive/15 text-destructive",
+            )}
+          >
+            {ok
+              ? `${warnings.length} warning${warnings.length === 1 ? "" : "s"}`
+              : `${errors.length} blocker${errors.length === 1 ? "" : "s"}`}
+          </span>
+        </div>
       </div>
       <ul className="space-y-1.5">
-        {errors.map((it) => (
-          <li
-            key={it.id}
-            className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs animate-fade-in"
-          >
-            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
-            <div>
-              <p className="font-medium text-destructive">{it.message}</p>
-              {it.hint && <p className="mt-0.5 text-muted-foreground">{it.hint}</p>}
-            </div>
-          </li>
-        ))}
-        {warnings.map((it) => (
-          <li
-            key={it.id}
-            className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/15 px-3 py-2 text-xs animate-fade-in"
-          >
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-foreground/70" />
-            <div>
-              <p className="font-medium">{it.message}</p>
-              {it.hint && <p className="mt-0.5 text-muted-foreground">{it.hint}</p>}
-            </div>
-          </li>
-        ))}
+        {[...errors, ...warnings].map((it) => {
+          const isError = it.severity === "error";
+          return (
+            <li
+              key={it.id}
+              className={cn(
+                "flex items-start gap-2 rounded-lg border px-3 py-2 text-xs animate-fade-in",
+                isError
+                  ? "border-destructive/30 bg-destructive/10"
+                  : "border-warning/40 bg-warning/15",
+              )}
+            >
+              {isError ? (
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+              ) : (
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-foreground/70" />
+              )}
+              <div className="flex-1">
+                <p className={cn("font-medium", isError && "text-destructive")}>{it.message}</p>
+                {it.hint && <p className="mt-0.5 text-muted-foreground">{it.hint}</p>}
+              </div>
+              {it.fix && onApplyFix && (
+                <button
+                  type="button"
+                  onClick={() => onApplyFix(it.fix!.apply(content))}
+                  className="shrink-0 rounded-md border border-border bg-background px-2 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  {it.fix.label}
+                </button>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
+  );
+}
+
+function ScheduleDialog({
+  open,
+  onOpenChange,
+  value,
+  saving,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  value: string | null;
+  saving: boolean;
+  onConfirm: (iso: string) => void;
+}) {
+  const [local, setLocal] = useState<string>(value ? toLocalInput(value) : "");
+
+  useEffect(() => {
+    if (open) setLocal(value ? toLocalInput(value) : "");
+  }, [open, value]);
+
+  const minLocal = toLocalInput(new Date(Date.now() + 60_000).toISOString());
+  const iso = local ? new Date(local).toISOString() : null;
+  const inPast = iso ? new Date(iso).getTime() < Date.now() : false;
+  const canConfirm = Boolean(iso) && !inPast && !saving;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CalendarClock className="h-4 w-4 text-primary" /> Schedule post
+          </DialogTitle>
+          <DialogDescription>
+            Pick a date & time in your local timezone. We'll surface the post in your queue when it's ready.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="dt-modal" className="text-xs text-muted-foreground">
+              Date & time
+            </Label>
+            <Input
+              id="dt-modal"
+              type="datetime-local"
+              value={local}
+              min={minLocal}
+              onChange={(e) => setLocal(e.target.value)}
+            />
+          </div>
+          {iso && (
+            <p className={cn("text-xs", inPast ? "text-destructive" : "text-muted-foreground")}>
+              {inPast
+                ? "Pick a time in the future."
+                : `Will publish ${format(new Date(iso), "EEE, MMM d · h:mm a")}.`}
+            </p>
+          )}
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!canConfirm}
+              onClick={() => iso && onConfirm(iso)}
+            >
+              {saving ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <CalendarClock className="mr-1.5 h-4 w-4" />
+              )}
+              Confirm schedule
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
