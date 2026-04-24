@@ -121,17 +121,6 @@ function AuthPage() {
         </main>
       ) : (
         <main className="flex flex-1 items-center justify-center px-6 py-10">
-      <header className="flex h-14 items-center justify-between px-6">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Layers className="h-4 w-4" />
-          </div>
-          <span className="font-semibold tracking-tight">SocialDeck</span>
-        </Link>
-        <ThemeToggle />
-      </header>
-
-      <main className="flex flex-1 items-center justify-center px-6 py-10">
         <div className="w-full max-w-sm">
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-semibold tracking-tight">
