@@ -56,7 +56,7 @@ function AppShell() {
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Layers className="h-4 w-4" />
           </div>
-          <span className="font-semibold tracking-tight">SocialDeck</span>
+          <span className="font-semibold tracking-tight">Pimci</span>
         </Link>
 
         <nav className="flex-1 space-y-0.5 px-3 py-4">
@@ -117,7 +117,7 @@ function AppShell() {
               <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
                 <Layers className="h-3.5 w-3.5" />
               </div>
-              <span className="text-sm font-semibold">SocialDeck</span>
+              <span className="text-sm font-semibold">Pimci</span>
             </Link>
           </div>
           <div className="ml-auto flex items-center gap-2">

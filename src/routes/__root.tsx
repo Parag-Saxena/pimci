@@ -32,20 +32,20 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SocialDeck — AI post composer & scheduler for LinkedIn and X" },
+      { title: "Pimci — AI post composer & scheduler for LinkedIn and X" },
       {
         name: "description",
         content:
           "Write, AI-generate, and schedule LinkedIn and X posts from one minimal workspace.",
       },
-      { property: "og:title", content: "SocialDeck — AI post composer & scheduler for LinkedIn and X" },
+      { property: "og:title", content: "Pimci — AI post composer & scheduler for LinkedIn and X" },
       {
         property: "og:description",
         content: "Write, AI-generate, and schedule LinkedIn and X posts.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "SocialDeck — AI post composer & scheduler for LinkedIn and X" },
+      { name: "twitter:title", content: "Pimci — AI post composer & scheduler for LinkedIn and X" },
       { name: "description", content: "Create and schedule social media posts for LinkedIn and X with AI-powered content generation." },
       { property: "og:description", content: "Create and schedule social media posts for LinkedIn and X with AI-powered content generation." },
       { name: "twitter:description", content: "Create and schedule social media posts for LinkedIn and X with AI-powered content generation." },
