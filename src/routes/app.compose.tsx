@@ -339,16 +339,26 @@ function Compose() {
         </TabsList>
       </Tabs>
 
-      <div className="mt-4 rounded-xl border border-border bg-card">
+      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
+        <MarkdownToolbar
+          onAction={(action) => {
+            const el = textareaRef.current;
+            if (!el) return;
+            applyMarkdown(el, draft.content, action, (next) =>
+              setDraft((d) => ({ ...d, content: next })),
+            );
+          }}
+        />
         <Textarea
+          ref={textareaRef}
           value={draft.content}
           onChange={(e) => setDraft((d) => ({ ...d, content: e.target.value }))}
           placeholder={
             draft.platform === "linkedin"
-              ? "Write a long-form post for LinkedIn — opening hook, short paragraphs, soft CTA…"
+              ? "Write a long-form post for LinkedIn — opening hook, short paragraphs, soft CTA…\n\nMarkdown supported: **bold**, *italic*, # headings, - lists, > quotes."
               : "Say something punchy in 280 characters or less…"
           }
-          className="min-h-[300px] resize-none border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
+          className="min-h-[300px] resize-none rounded-none border-0 bg-transparent font-mono text-sm shadow-none focus-visible:ring-0 md:text-sm"
         />
         <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
           <div className="flex items-center gap-2 text-xs">
