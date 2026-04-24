@@ -20,7 +20,13 @@ import {
   Link2,
   Quote,
   Code,
+  Eye,
+  Pencil,
+  CalendarClock,
+  CheckCircle2,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
