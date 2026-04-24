@@ -149,6 +149,8 @@ function applyMarkdown(
     el.setSelectionRange(nextStart, nextEnd);
   });
 }
+
+function Compose() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const params = useSearch({ from: "/app/compose" });
