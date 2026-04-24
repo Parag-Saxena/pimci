@@ -247,8 +247,22 @@ function Queue() {
                   </button>
                 </div>
                 <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  {(p.status === "ready" || p.status === "scheduled" || p.status === "draft" || p.status === "failed") && (
+                    <Button
+                      size="sm"
+                      onClick={() => publishNow(p)}
+                      disabled={publishingId === p.id}
+                    >
+                      {publishingId === p.id ? (
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Send className="mr-1.5 h-3.5 w-3.5" />
+                      )}
+                      Publish
+                    </Button>
+                  )}
                   {p.status === "ready" && (
-                    <Button size="sm" onClick={() => copyAndOpen(p)}>
+                    <Button variant="ghost" size="sm" onClick={() => copyAndOpen(p)}>
                       <Copy className="mr-1.5 h-3.5 w-3.5" />
                       Copy & open
                     </Button>
@@ -259,7 +273,7 @@ function Queue() {
                       Mark done
                     </Button>
                   )}
-                  {p.status !== "ready" && p.status !== "scheduled" && (
+                  {p.status === "published" && (
                     <Button variant="ghost" size="icon" onClick={() => copyAndOpen(p)} title="Copy & open">
                       <ExternalLink className="h-3.5 w-3.5" />
                     </Button>
