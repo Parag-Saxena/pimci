@@ -506,11 +506,9 @@ function Compose() {
             />
           </>
         ) : (
-          <div className="min-h-[300px] px-4 py-4">
+          <div className="min-h-[300px] bg-muted/30 px-4 py-4">
             {draft.content.trim() ? (
-              <div className="prose prose-sm max-w-none animate-fade-in dark:prose-invert prose-headings:font-semibold prose-headings:tracking-tight prose-p:leading-relaxed prose-a:text-primary prose-blockquote:border-primary prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:text-[0.85em] prose-code:before:content-none prose-code:after:content-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{draft.content}</ReactMarkdown>
-              </div>
+              <PlatformPreview content={draft.content} platform={draft.platform} />
             ) : (
               <p className="text-sm text-muted-foreground">Nothing to preview yet — start writing.</p>
             )}
