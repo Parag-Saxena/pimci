@@ -8,6 +8,8 @@ import {
   Layers,
   PenSquare,
   LogOut,
+  ChevronsUpDown,
+  UserCircle,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -15,6 +17,14 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/app")({
   component: AppShell,
@@ -48,18 +58,30 @@ function AppShell() {
     .join("")
     .toUpperCase();
 
+  const username =
+    user.user_metadata?.display_name || user.email?.split("@")[0] || "Account";
+
+  const handleSignOut = () => {
+    signOut();
+    navigate({ to: "/" });
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
-        <Link to="/app" className="flex h-14 items-center gap-2 border-b border-border px-5">
+      {/* Sidebar — sticky */}
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
+        <Link
+          to="/app"
+          className="flex h-14 items-center gap-2 border-b border-border px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
+          aria-label="Pimci home"
+        >
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Layers className="h-4 w-4" />
+            <Layers className="h-4 w-4" aria-hidden="true" />
           </div>
           <span className="font-semibold tracking-tight">Pimci</span>
         </Link>
 
-        <nav className="flex-1 space-y-0.5 px-3 py-4">
+        <nav aria-label="Primary" className="flex-1 space-y-0.5 px-3 py-4">
           {NAV.map((item) => {
             const active = item.exact ? path === item.to : path.startsWith(item.to);
             const Icon = item.icon;
@@ -67,14 +89,15 @@ function AppShell() {
               <Link
                 key={item.to}
                 to={item.to}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+                  "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
                 )}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-4 w-4" aria-hidden="true" />
                 {item.label}
               </Link>
             );
@@ -82,40 +105,69 @@ function AppShell() {
         </nav>
 
         <div className="border-t border-border p-3">
-          <div className="flex items-center gap-2.5 rounded-md px-2 py-2">
-            <Avatar className="h-7 w-7">
-              <AvatarImage src={user.user_metadata?.avatar_url} />
-              <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium">
-                {user.user_metadata?.display_name || user.email?.split("@")[0]}
-              </div>
-              <div className="truncate text-xs text-muted-foreground">{user.email}</div>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => {
-                signOut();
-                navigate({ to: "/" });
-              }}
-              aria-label="Sign out"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-            </Button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors hover:bg-sidebar-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={`Account menu for ${username}`}
+              >
+                <Avatar className="h-7 w-7">
+                  <AvatarImage src={user.user_metadata?.avatar_url} alt="" />
+                  <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium">{username}</div>
+                </div>
+                <ChevronsUpDown
+                  className="h-3.5 w-3.5 text-muted-foreground"
+                  aria-hidden="true"
+                />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="start" className="w-56">
+              <DropdownMenuLabel className="flex items-center gap-2">
+                <Avatar className="h-7 w-7">
+                  <AvatarImage src={user.user_metadata?.avatar_url} alt="" />
+                  <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium">{username}</div>
+                  <div className="truncate text-xs font-normal text-muted-foreground">
+                    {user.email}
+                  </div>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/app/settings" className="cursor-pointer">
+                  <UserCircle className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/app/settings" className="cursor-pointer">
+                  <Settings className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={handleSignOut} className="cursor-pointer">
+                <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </aside>
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-xl">
           <div className="md:hidden">
-            <Link to="/app" className="flex items-center gap-2">
+            <Link to="/app" className="flex items-center gap-2" aria-label="Pimci home">
               <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                <Layers className="h-3.5 w-3.5" />
+                <Layers className="h-3.5 w-3.5" aria-hidden="true" />
               </div>
               <span className="text-sm font-semibold">Pimci</span>
             </Link>
@@ -124,7 +176,7 @@ function AppShell() {
             <ThemeToggle />
             <Link to="/app/compose">
               <Button size="sm">
-                <PenSquare className="mr-1.5 h-3.5 w-3.5" />
+                <PenSquare className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
                 New post
               </Button>
             </Link>
@@ -132,7 +184,10 @@ function AppShell() {
         </header>
 
         {/* Mobile bottom nav */}
-        <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-background md:hidden">
+        <nav
+          aria-label="Primary"
+          className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-background md:hidden"
+        >
           {NAV.map((item) => {
             const active = item.exact ? path === item.to : path.startsWith(item.to);
             const Icon = item.icon;
@@ -140,20 +195,23 @@ function AppShell() {
               <Link
                 key={item.to}
                 to={item.to}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px]",
+                  "flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-4 w-4" aria-hidden="true" />
                 {item.label}
               </Link>
             );
           })}
         </nav>
 
-        <main className="flex-1 overflow-auto pb-16 md:pb-0">
-          <Outlet />
+        <main className="flex-1 overflow-auto p-4 pb-20 md:p-6 md:pb-6">
+          <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
