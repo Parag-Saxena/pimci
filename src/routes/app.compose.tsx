@@ -60,8 +60,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PLATFORM_LIMITS, type Platform } from "@/lib/platform";
-import { runPreflight } from "@/lib/preflight";
+import { PLATFORM_LIMITS, PLATFORM_LABEL, type Platform } from "@/lib/platform";
+import { runPreflight, stripMarkdown } from "@/lib/preflight";
 import { useGeneratePosts, useGenerateTrendIdeas, useRewritePost } from "@/hooks/use-ai";
 
 const search = z.object({
@@ -216,6 +216,205 @@ function MarkdownToolbar({ onAction }: { onAction: (a: MdAction) => void }) {
         );
       })}
       <span className="ml-auto pr-1 text-[10px] text-muted-foreground">Markdown</span>
+    </div>
+  );
+}
+
+/* ---------- Platform-accurate post preview ---------- */
+
+function platformContent(content: string, platform: Platform) {
+  // Both LinkedIn and X render plain text — markdown is stripped, links left intact.
+  let body = stripMarkdown(content);
+  if (platform === "x") body = body.replace(/\n{3,}/g, "\n\n");
+  return body;
+}
+
+function effectiveLengthFor(content: string, platform: Platform): number {
+  if (platform === "x") {
+    const replaced = content.replace(/\bhttps?:\/\/[^\s)]+/gi, "x".repeat(23));
+    return Array.from(replaced).length;
+  }
+  return Array.from(content).length;
+}
+
+function autolink(text: string): React.ReactNode[] {
+  const re = /(https?:\/\/[^\s)]+)/gi;
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let i = 0;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
+    parts.push(
+      <a
+        key={`l-${i++}`}
+        href={m[1]}
+        target="_blank"
+        rel="noreferrer"
+        className="text-[hsl(var(--primary))] underline-offset-2 hover:underline"
+      >
+        {m[1]}
+      </a>,
+    );
+    last = m.index + m[1].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
+
+function LinkedInPreview({ rendered }: { rendered: string }) {
+  // LinkedIn truncates the in-feed body around ~210 chars, then "…see more".
+  const TRUNC = 210;
+  const isLong = rendered.length > TRUNC;
+  const visible = isLong ? rendered.slice(0, TRUNC).replace(/\s+\S*$/, "") : rendered;
+  const rest = isLong ? rendered.slice(visible.length) : "";
+
+  return (
+    <div className="mx-auto max-w-[560px] overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
+      <div className="flex items-center gap-3 px-4 pt-4">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-linkedin/15 text-sm font-semibold text-linkedin">
+          You
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold leading-tight">Your Name</p>
+          <p className="truncate text-xs text-muted-foreground">Your headline · 1st</p>
+          <p className="text-[11px] text-muted-foreground">now · 🌐</p>
+        </div>
+      </div>
+      <div className="px-4 pb-3 pt-3 text-[14px] leading-[1.45] text-foreground">
+        <span className="whitespace-pre-wrap break-words">{autolink(visible)}</span>
+        {isLong && (
+          <>
+            <span className="text-muted-foreground">… </span>
+            <button
+              type="button"
+              className="text-xs font-medium text-muted-foreground hover:underline"
+              title={rest}
+            >
+              see more
+            </button>
+          </>
+        )}
+      </div>
+      <div className="flex items-center justify-between border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
+        <span>👍 ❤️ 💡 · 0</span>
+        <span>0 comments</span>
+      </div>
+      <div className="grid grid-cols-4 border-t border-border text-[11px] text-muted-foreground">
+        {["Like", "Comment", "Repost", "Send"].map((l) => (
+          <button
+            key={l}
+            type="button"
+            className="px-2 py-2 transition-colors hover:bg-muted"
+          >
+            {l}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function XPreview({ rendered, overflow }: { rendered: string; overflow: number }) {
+  return (
+    <div className="mx-auto max-w-[560px] overflow-hidden rounded-2xl border border-border bg-card text-card-foreground">
+      <div className="flex gap-3 px-4 pt-4">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-x-platform/15 text-sm font-semibold text-x-platform">
+          You
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-1 text-sm">
+            <span className="font-semibold">Your Name</span>
+            <span className="truncate text-muted-foreground">@you · now</span>
+          </div>
+          <div className="mt-0.5 whitespace-pre-wrap break-words text-[15px] leading-[1.35]">
+            {overflow > 0 ? (
+              <>
+                {autolink(rendered)}
+                <span className="ml-1 inline-flex items-center rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-medium text-destructive">
+                  +{overflow} over limit
+                </span>
+              </>
+            ) : (
+              autolink(rendered)
+            )}
+          </div>
+          <div className="mt-3 flex items-center justify-between pb-3 pr-2 text-[12px] text-muted-foreground">
+            <span>💬 0</span>
+            <span>🔁 0</span>
+            <span>♥ 0</span>
+            <span>📊 0</span>
+            <span>↗</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PlatformPreview({
+  content,
+  platform,
+}: {
+  content: string;
+  platform: Platform;
+}) {
+  const [shown, setShown] = useState<Platform>(platform);
+  // Sync with composer platform when it changes
+  useEffect(() => {
+    setShown(platform);
+  }, [platform]);
+
+  const rendered = platformContent(content, shown);
+  const limit = PLATFORM_LIMITS[shown];
+  const len = effectiveLengthFor(rendered, shown);
+  const overflow = Math.max(0, len - limit);
+  const stripped = rendered !== content;
+
+  return (
+    <div className="animate-fade-in space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="inline-flex items-center gap-0.5 rounded-md border border-border bg-background p-0.5">
+          {(["linkedin", "x"] as Platform[]).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setShown(p)}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-colors",
+                shown === p
+                  ? p === "linkedin"
+                    ? "bg-linkedin text-white shadow-sm"
+                    : "bg-x-platform text-white shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {PLATFORM_LABEL[p]}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <span className={cn("tabular-nums", overflow > 0 && "text-destructive")}>
+            {len.toLocaleString()} / {limit.toLocaleString()}
+          </span>
+          {stripped && (
+            <span
+              className="rounded-full bg-warning/20 px-2 py-0.5 text-[10px] font-medium text-foreground"
+              title="Markdown is stripped on this platform"
+            >
+              MD stripped
+            </span>
+          )}
+        </div>
+      </div>
+      {shown === "linkedin" ? (
+        <LinkedInPreview rendered={rendered} />
+      ) : (
+        <XPreview rendered={rendered} overflow={overflow} />
+      )}
+      <p className="text-center text-[11px] text-muted-foreground">
+        Approximation of how your post will render on {PLATFORM_LABEL[shown]}.
+      </p>
     </div>
   );
 }
@@ -506,11 +705,9 @@ function Compose() {
             />
           </>
         ) : (
-          <div className="min-h-[300px] px-4 py-4">
+          <div className="min-h-[300px] bg-muted/30 px-4 py-4">
             {draft.content.trim() ? (
-              <div className="prose prose-sm max-w-none animate-fade-in dark:prose-invert prose-headings:font-semibold prose-headings:tracking-tight prose-p:leading-relaxed prose-a:text-primary prose-blockquote:border-primary prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:text-[0.85em] prose-code:before:content-none prose-code:after:content-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{draft.content}</ReactMarkdown>
-              </div>
+              <PlatformPreview content={draft.content} platform={draft.platform} />
             ) : (
               <p className="text-sm text-muted-foreground">Nothing to preview yet — start writing.</p>
             )}
