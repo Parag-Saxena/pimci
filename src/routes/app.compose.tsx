@@ -573,6 +573,8 @@ function Compose() {
           </div>
         </div>
 
+        <PreflightPanel platform={draft.platform} preflight={preflight} />
+
         <div className="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
           <Button
             variant="outline"
@@ -590,15 +592,21 @@ function Compose() {
             variant="secondary"
             onClick={() => save("scheduled")}
             disabled={
-              saving || publishing || !draft.content.trim() || !draft.scheduled_at
+              saving ||
+              publishing ||
+              !draft.content.trim() ||
+              !draft.scheduled_at ||
+              !preflight.ok
             }
+            title={!preflight.ok ? "Resolve preflight errors first" : undefined}
           >
             <CalendarClock className="mr-1.5 h-4 w-4" />
             Schedule post
           </Button>
           <Button
             onClick={() => save("published")}
-            disabled={saving || publishing || !draft.content.trim()}
+            disabled={saving || publishing || !draft.content.trim() || !preflight.ok}
+            title={!preflight.ok ? "Resolve preflight errors first" : undefined}
           >
             {publishing ? (
               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
