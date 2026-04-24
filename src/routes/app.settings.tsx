@@ -1,8 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, Loader2, Plug, Unplug, ExternalLink } from "lucide-react";
+import { AlertCircle, Loader2, Plug, Unplug, ExternalLink, History, Trash2, CheckCircle2, XCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  getLinkedInHistory,
+  recordLinkedInAttempt,
+  clearLinkedInHistory,
+  type LinkedInAttempt,
+} from "@/lib/linkedin-oauth-history";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
