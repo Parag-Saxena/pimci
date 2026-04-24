@@ -17,10 +17,13 @@ export type ConnectedAccountSummary = {
 export const listConnectedAccounts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase } = context;
-    const { data, error } = await supabase
+    const { userId } = context;
+    // Use admin client (RLS is locked down for connected_accounts to keep
+    // OAuth tokens out of any client-readable query). Always scope by user_id.
+    const { data, error } = await supabaseAdmin
       .from("connected_accounts")
       .select("platform, handle, display_name, avatar_url, created_at")
+      .eq("user_id", userId)
       .order("created_at", { ascending: true });
     if (error) {
       console.error("listConnectedAccounts error", error);
@@ -47,10 +50,11 @@ export const disconnectAccount = createServerFn({ method: "POST" })
     return { platform: input.platform };
   })
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { error } = await supabase
+    const { userId } = context;
+    const { error } = await supabaseAdmin
       .from("connected_accounts")
       .delete()
+      .eq("user_id", userId)
       .eq("platform", data.platform);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -81,10 +85,11 @@ export const publishPost = createServerFn({ method: "POST" })
     if (postErr) throw new Error(postErr.message);
     if (!post) throw new Error("Post not found");
 
-    // Check connected account
-    const { data: account } = await supabase
+    // Check connected account via admin client (table has no client-side RLS).
+    const { data: account } = await supabaseAdmin
       .from("connected_accounts")
       .select("platform")
+      .eq("user_id", userId)
       .eq("platform", post.platform)
       .maybeSingle();
 
