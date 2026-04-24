@@ -224,6 +224,10 @@ function Compose() {
     navigate({ to: "/app/compose", search: { id: data.id } });
   };
 
+  if (authLoading || loadingDraft) {
+    return <ComposeSkeleton />;
+  }
+
   return (
     <div className="mx-auto max-w-3xl p-6 md:p-10">
       <div className="mb-5 flex items-center justify-between">
