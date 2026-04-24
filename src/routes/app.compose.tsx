@@ -599,6 +599,7 @@ function Compose() {
       <PreflightPanel
         platform={draft.platform}
         preflight={preflight}
+        content={draft.content}
         onApplyFix={(next) => {
           setDraft((d) => ({ ...d, content: next }));
           setDirty(true);
