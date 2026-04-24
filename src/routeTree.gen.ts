@@ -17,6 +17,9 @@ import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppQueueRouteImport } from './routes/app.queue'
 import { Route as AppComposeRouteImport } from './routes/app.compose'
 import { Route as AppCalendarRouteImport } from './routes/app.calendar'
+import { Route as ApiPublicCronPublishDueRouteImport } from './routes/api.public.cron.publish-due'
+import { Route as ApiPublicOauthLinkedinStartRouteImport } from './routes/api.public.oauth.linkedin.start'
+import { Route as ApiPublicOauthLinkedinCallbackRouteImport } from './routes/api.public.oauth.linkedin.callback'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -58,6 +61,23 @@ const AppCalendarRoute = AppCalendarRouteImport.update({
   path: '/calendar',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiPublicCronPublishDueRoute = ApiPublicCronPublishDueRouteImport.update({
+  id: '/api/public/cron/publish-due',
+  path: '/api/public/cron/publish-due',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicOauthLinkedinStartRoute =
+  ApiPublicOauthLinkedinStartRouteImport.update({
+    id: '/api/public/oauth/linkedin/start',
+    path: '/api/public/oauth/linkedin/start',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicOauthLinkedinCallbackRoute =
+  ApiPublicOauthLinkedinCallbackRouteImport.update({
+    id: '/api/public/oauth/linkedin/callback',
+    path: '/api/public/oauth/linkedin/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +88,9 @@ export interface FileRoutesByFullPath {
   '/app/queue': typeof AppQueueRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/': typeof AppIndexRoute
+  '/api/public/cron/publish-due': typeof ApiPublicCronPublishDueRoute
+  '/api/public/oauth/linkedin/callback': typeof ApiPublicOauthLinkedinCallbackRoute
+  '/api/public/oauth/linkedin/start': typeof ApiPublicOauthLinkedinStartRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -77,6 +100,9 @@ export interface FileRoutesByTo {
   '/app/queue': typeof AppQueueRoute
   '/app/settings': typeof AppSettingsRoute
   '/app': typeof AppIndexRoute
+  '/api/public/cron/publish-due': typeof ApiPublicCronPublishDueRoute
+  '/api/public/oauth/linkedin/callback': typeof ApiPublicOauthLinkedinCallbackRoute
+  '/api/public/oauth/linkedin/start': typeof ApiPublicOauthLinkedinStartRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -88,6 +114,9 @@ export interface FileRoutesById {
   '/app/queue': typeof AppQueueRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/': typeof AppIndexRoute
+  '/api/public/cron/publish-due': typeof ApiPublicCronPublishDueRoute
+  '/api/public/oauth/linkedin/callback': typeof ApiPublicOauthLinkedinCallbackRoute
+  '/api/public/oauth/linkedin/start': typeof ApiPublicOauthLinkedinStartRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -100,6 +129,9 @@ export interface FileRouteTypes {
     | '/app/queue'
     | '/app/settings'
     | '/app/'
+    | '/api/public/cron/publish-due'
+    | '/api/public/oauth/linkedin/callback'
+    | '/api/public/oauth/linkedin/start'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -109,6 +141,9 @@ export interface FileRouteTypes {
     | '/app/queue'
     | '/app/settings'
     | '/app'
+    | '/api/public/cron/publish-due'
+    | '/api/public/oauth/linkedin/callback'
+    | '/api/public/oauth/linkedin/start'
   id:
     | '__root__'
     | '/'
@@ -119,12 +154,18 @@ export interface FileRouteTypes {
     | '/app/queue'
     | '/app/settings'
     | '/app/'
+    | '/api/public/cron/publish-due'
+    | '/api/public/oauth/linkedin/callback'
+    | '/api/public/oauth/linkedin/start'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicCronPublishDueRoute: typeof ApiPublicCronPublishDueRoute
+  ApiPublicOauthLinkedinCallbackRoute: typeof ApiPublicOauthLinkedinCallbackRoute
+  ApiPublicOauthLinkedinStartRoute: typeof ApiPublicOauthLinkedinStartRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -185,6 +226,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCalendarRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/public/cron/publish-due': {
+      id: '/api/public/cron/publish-due'
+      path: '/api/public/cron/publish-due'
+      fullPath: '/api/public/cron/publish-due'
+      preLoaderRoute: typeof ApiPublicCronPublishDueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/oauth/linkedin/start': {
+      id: '/api/public/oauth/linkedin/start'
+      path: '/api/public/oauth/linkedin/start'
+      fullPath: '/api/public/oauth/linkedin/start'
+      preLoaderRoute: typeof ApiPublicOauthLinkedinStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/oauth/linkedin/callback': {
+      id: '/api/public/oauth/linkedin/callback'
+      path: '/api/public/oauth/linkedin/callback'
+      fullPath: '/api/public/oauth/linkedin/callback'
+      preLoaderRoute: typeof ApiPublicOauthLinkedinCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -210,6 +272,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicCronPublishDueRoute: ApiPublicCronPublishDueRoute,
+  ApiPublicOauthLinkedinCallbackRoute: ApiPublicOauthLinkedinCallbackRoute,
+  ApiPublicOauthLinkedinStartRoute: ApiPublicOauthLinkedinStartRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
