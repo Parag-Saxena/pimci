@@ -2,11 +2,18 @@ import { PLATFORM_LIMITS, PLATFORM_LABEL, type Platform } from "@/lib/platform";
 
 export type PreflightSeverity = "error" | "warning";
 
+export type PreflightFix = {
+  label: string;
+  /** Returns the new content. */
+  apply: (content: string) => string;
+};
+
 export type PreflightIssue = {
   id: string;
   severity: PreflightSeverity;
   message: string;
   hint?: string;
+  fix?: PreflightFix;
 };
 
 export type PreflightResult = {
@@ -22,6 +29,91 @@ const MENTION_RE = /(?:^|\s)@([A-Za-z0-9_]{1,30})/g;
 const X_URL_WEIGHT = 23;
 const MAX_HASHTAGS_LINKEDIN = 5;
 const MAX_HASHTAGS_X = 3;
+
+/* ------------ Fix helpers (exported for tests + reuse) ------------ */
+
+/** Truncate to `max` code points, trying not to cut a word in half, append ellipsis. */
+export function truncateToCodePoints(content: string, max: number): string {
+  const cps = Array.from(content);
+  if (cps.length <= max) return content;
+  const room = Math.max(1, max - 1); // leave room for "…"
+  let out = cps.slice(0, room).join("");
+  // Don't cut a word: backtrack to last whitespace if recent.
+  const lastSpace = out.lastIndexOf(" ");
+  if (lastSpace > out.length - 20 && lastSpace > 0) {
+    out = out.slice(0, lastSpace).replace(/[\s,;:.\-]+$/, "");
+  }
+  return `${out.replace(/\s+$/, "")}…`;
+}
+
+/** Shorten so X effective length (links = 23 chars) fits the limit. */
+export function shortenForX(content: string, limit = PLATFORM_LIMITS.x): string {
+  const linkPad = "x".repeat(X_URL_WEIGHT);
+  let out = content;
+  // Iterate: replace links with the 23-char weight, see effective length, trim plain text accordingly.
+  for (let i = 0; i < 4; i++) {
+    const weighted = out.replace(URL_RE, linkPad);
+    const eff = Array.from(weighted).length;
+    if (eff <= limit) return out;
+    const overflow = eff - limit;
+    // Trim that many code points from the end of the actual text.
+    const cps = Array.from(out);
+    out = cps.slice(0, Math.max(0, cps.length - overflow - 1)).join("") + "…";
+  }
+  return out;
+}
+
+/** Keep only the first `max` hashtags; remove the rest (and their leading whitespace). */
+export function limitHashtags(content: string, max: number): string {
+  let kept = 0;
+  return content.replace(HASHTAG_RE, (match) => {
+    kept += 1;
+    if (kept <= max) return match;
+    return ""; // drop tag and its leading whitespace captured by the regex
+  });
+}
+
+/** Keep only the first URL; remove subsequent ones. */
+export function keepFirstLink(content: string): string {
+  let seen = 0;
+  return content.replace(URL_RE, (m) => {
+    seen += 1;
+    return seen === 1 ? m : "";
+  }).replace(/[ \t]{2,}/g, " ");
+}
+
+/** Strip markdown formatting → plain text suitable for LinkedIn / X. */
+export function stripMarkdown(content: string): string {
+  let out = content;
+  // [text](url) → text (url)
+  out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 ($2)");
+  // ![alt](url) → alt
+  out = out.replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1");
+  // Headings: "## Title" → "Title"
+  out = out.replace(/^#{1,6}\s+/gm, "");
+  // Blockquotes: "> text" → "text"
+  out = out.replace(/^>\s?/gm, "");
+  // List markers: "- " or "* " or "1. " at line start
+  out = out.replace(/^\s*[-*+]\s+/gm, "");
+  out = out.replace(/^\s*\d+\.\s+/gm, "");
+  // Bold: **text** or __text__
+  out = out.replace(/\*\*([^*]+)\*\*/g, "$1");
+  out = out.replace(/__([^_]+)__/g, "$1");
+  // Italic: *text* or _text_  (avoid matching ** that we just unwrapped)
+  out = out.replace(/(^|[^*])\*([^*\n]+)\*/g, "$1$2");
+  out = out.replace(/(^|[^_])_([^_\n]+)_/g, "$1$2");
+  // Inline code: `text`
+  out = out.replace(/`([^`\n]+)`/g, "$1");
+  // Code fences ```lang\n...\n```
+  out = out.replace(/```[\w-]*\n?([\s\S]*?)```/g, "$1");
+  return out;
+}
+
+/** Collapse runs of 3+ blank lines into a single blank line. */
+export function collapseBlankLines(content: string): string {
+  return content.replace(/\n{3,}/g, "\n\n");
+}
+
 
 function effectiveLengthForX(content: string): number {
   // Replace each URL with a 23-char placeholder for counting.
