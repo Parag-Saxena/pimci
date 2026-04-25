@@ -31,10 +31,20 @@ const NAV_ITEMS: NavItem[] = [
   { id: "stats", label: "Stats", href: "#stats", icon: BarChart3 },
 ];
 
-const SCROLL_THRESHOLD = 100;
+const DEFAULT_SCROLL_THRESHOLD = 100;
 const THROTTLE_MS = 16;
 
-export function LandingNavbar() {
+export type LandingNavbarProps = {
+  /**
+   * Vertical scroll distance (in px) at which the navbar collapses into its
+   * floating pill state. Tune this to match your hero's height so the
+   * transition fires exactly when the hero leaves the viewport.
+   * @default 100
+   */
+  scrollThreshold?: number;
+};
+
+export function LandingNavbar({ scrollThreshold = DEFAULT_SCROLL_THRESHOLD }: LandingNavbarProps = {}) {
   const [scrolled, setScrolled] = useState(false);
   const [activeId, setActiveId] = useState<string>("features");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
