@@ -105,19 +105,24 @@ export function LandingNavbar() {
   return (
     <>
       <header
-        className={cn(
-          "fixed inset-x-0 z-50 transition-[top,max-width,padding,background-color,backdrop-filter,border-color,box-shadow,border-radius] duration-[380ms] ease-out",
-          scrolled
-            ? "top-3 mx-auto max-w-5xl rounded-full border border-border/60 bg-background/75 backdrop-blur-xl shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)]"
-            : "top-0 max-w-none border-b border-transparent bg-transparent",
-        )}
+        className="fixed inset-x-0 top-0 z-50 flex justify-center pointer-events-none"
         role="banner"
+        style={{ willChange: "transform" }}
       >
+        {/* Inner shell — only transform/opacity/background animate. Width stays constant to avoid layout. */}
         <div
           className={cn(
-            "mx-auto flex h-16 items-center justify-between gap-3 transition-[max-width,padding] duration-[380ms] ease-out",
-            scrolled ? "max-w-5xl px-3 sm:px-4" : "max-w-7xl px-4 sm:px-6",
+            "pointer-events-auto relative mt-0 w-full max-w-7xl origin-top",
+            "transition-[transform,background-color,backdrop-filter,border-color,box-shadow,border-radius,margin-top] duration-[380ms] ease-out",
+            "border",
+            scrolled
+              ? "mt-3 scale-[0.92] rounded-full border-border/60 bg-background/75 backdrop-blur-xl shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)]"
+              : "scale-100 rounded-none border-transparent bg-transparent",
           )}
+          style={{ willChange: "transform, background-color" }}
+        >
+        <div
+          className="mx-auto flex h-16 items-center justify-between gap-3 px-4 sm:px-6"
         >
           {/* Brand */}
           <Link
