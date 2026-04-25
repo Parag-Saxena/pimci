@@ -240,6 +240,7 @@ export function LandingNavbar() {
             </button>
           </div>
         </div>
+        </div>
       </header>
 
       {/* Header is fixed/floating — hero owns its own top spacing, no spacer needed */}
