@@ -18,6 +18,7 @@ import {
   Github,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CornerBracketButton } from "@/components/CornerBracketButton";
 import { LandingNavbar } from "@/components/LandingNavbar";
 
 export const Route = createFileRoute("/")({
@@ -94,10 +95,10 @@ function Hero() {
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link to="/auth" search={{ mode: "signup" }}>
-              <Button size="lg" className="group">
+              <CornerBracketButton className="group">
                 Start writing free
                 <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Button>
+              </CornerBracketButton>
             </Link>
             <a href="#demo">
               <Button size="lg" variant="ghost">Watch demo</Button>
