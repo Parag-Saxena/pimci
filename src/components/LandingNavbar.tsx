@@ -106,14 +106,19 @@ export function LandingNavbar() {
     <>
       <header
         className={cn(
-          "fixed inset-x-0 top-0 z-50 transition-[background-color,backdrop-filter,border-color,box-shadow] duration-[380ms] ease-out",
+          "fixed inset-x-0 z-50 transition-[top,max-width,padding,background-color,backdrop-filter,border-color,box-shadow,border-radius] duration-[380ms] ease-out",
           scrolled
-            ? "border-b border-border/60 bg-background/70 backdrop-blur-xl shadow-[0_1px_0_rgba(0,0,0,0.02)]"
-            : "border-b border-transparent bg-transparent",
+            ? "top-3 mx-auto max-w-5xl rounded-full border border-border/60 bg-background/75 backdrop-blur-xl shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)]"
+            : "top-0 max-w-none border-b border-transparent bg-transparent",
         )}
         role="banner"
       >
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
+        <div
+          className={cn(
+            "mx-auto flex h-16 items-center justify-between gap-3 transition-[max-width,padding] duration-[380ms] ease-out",
+            scrolled ? "max-w-5xl px-3 sm:px-4" : "max-w-7xl px-4 sm:px-6",
+          )}
+        >
           {/* Brand */}
           <Link
             to="/"
@@ -232,8 +237,8 @@ export function LandingNavbar() {
         </div>
       </header>
 
-      {/* Spacer to prevent layout shift since header is fixed */}
-      <div aria-hidden="true" className="h-16" />
+      {/* Header is fixed/floating — hero owns its own top spacing, no spacer needed */}
+
 
       {/* Mobile drawer */}
       <div
