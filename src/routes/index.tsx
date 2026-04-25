@@ -18,6 +18,7 @@ import {
   Github,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CornerBracketButton } from "@/components/CornerBracketButton";
 import { LandingNavbar } from "@/components/LandingNavbar";
 
 export const Route = createFileRoute("/")({
