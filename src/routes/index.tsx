@@ -691,7 +691,7 @@ function StatsSection() {
   }, []);
 
   return (
-    <section ref={ref} className="border-y border-border bg-card/40">
+    <section id="stats" ref={ref} className="border-y border-border bg-card/40">
       <div className="mx-auto grid max-w-6xl gap-px bg-border sm:grid-cols-2 lg:grid-cols-4">
         {STATS.map((s) => (
           <div key={s.label} className="bg-card px-6 py-10 text-center">
