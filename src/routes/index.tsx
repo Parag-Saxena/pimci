@@ -18,7 +18,7 @@ import {
   Github,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { LandingNavbar } from "@/components/LandingNavbar";
 
 export const Route = createFileRoute("/")({
   head: () => ({
