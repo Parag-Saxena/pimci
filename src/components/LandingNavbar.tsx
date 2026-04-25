@@ -58,7 +58,7 @@ export function LandingNavbar({ scrollThreshold = DEFAULT_SCROLL_THRESHOLD }: La
       if (now - lastRun.current < THROTTLE_MS) return;
       lastRun.current = now;
 
-      setScrolled(window.scrollY > SCROLL_THRESHOLD);
+      setScrolled(window.scrollY > scrollThreshold);
 
       // Active section detection — pick the section whose top is closest to 1/3 viewport
       const probe = window.innerHeight / 3;
