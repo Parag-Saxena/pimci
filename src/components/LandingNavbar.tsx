@@ -31,10 +31,20 @@ const NAV_ITEMS: NavItem[] = [
   { id: "stats", label: "Stats", href: "#stats", icon: BarChart3 },
 ];
 
-const SCROLL_THRESHOLD = 100;
+const DEFAULT_SCROLL_THRESHOLD = 100;
 const THROTTLE_MS = 16;
 
-export function LandingNavbar() {
+export type LandingNavbarProps = {
+  /**
+   * Vertical scroll distance (in px) at which the navbar collapses into its
+   * floating pill state. Tune this to match your hero's height so the
+   * transition fires exactly when the hero leaves the viewport.
+   * @default 100
+   */
+  scrollThreshold?: number;
+};
+
+export function LandingNavbar({ scrollThreshold = DEFAULT_SCROLL_THRESHOLD }: LandingNavbarProps = {}) {
   const [scrolled, setScrolled] = useState(false);
   const [activeId, setActiveId] = useState<string>("features");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -48,7 +58,7 @@ export function LandingNavbar() {
       if (now - lastRun.current < THROTTLE_MS) return;
       lastRun.current = now;
 
-      setScrolled(window.scrollY > SCROLL_THRESHOLD);
+      setScrolled(window.scrollY > scrollThreshold);
 
       // Active section detection — pick the section whose top is closest to 1/3 viewport
       const probe = window.innerHeight / 3;
@@ -70,7 +80,7 @@ export function LandingNavbar() {
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [scrollThreshold]);
 
   // Lock body scroll when mobile drawer is open
   useEffect(() => {
