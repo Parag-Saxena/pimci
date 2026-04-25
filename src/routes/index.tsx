@@ -18,7 +18,7 @@ import {
   Github,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { LandingNavbar } from "@/components/LandingNavbar";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -43,7 +43,7 @@ export const Route = createFileRoute("/")({
 function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Header />
+      <LandingNavbar />
       <main>
         <Hero />
         <BentoSection />
@@ -59,36 +59,7 @@ function Landing() {
 }
 
 /* ----------------------------------------------------------------- Header */
-
-function Header() {
-  return (
-    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/75 backdrop-blur-xl">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Layers className="h-4 w-4" />
-          </div>
-          <span className="font-semibold tracking-tight">Pimci</span>
-        </Link>
-        <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
-          <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-          <a href="#how" className="hover:text-foreground transition-colors">How it works</a>
-          <a href="#demo" className="hover:text-foreground transition-colors">Demo</a>
-          <a href="#testimonials" className="hover:text-foreground transition-colors">Loved by</a>
-        </nav>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <Link to="/auth">
-            <Button variant="ghost" size="sm">Sign in</Button>
-          </Link>
-          <Link to="/auth" search={{ mode: "signup" }}>
-            <Button size="sm">Get started</Button>
-          </Link>
-        </div>
-      </div>
-    </header>
-  );
-}
+// Header replaced by <LandingNavbar />.
 
 /* ------------------------------------------------------------------- Hero */
 
@@ -720,7 +691,7 @@ function StatsSection() {
   }, []);
 
   return (
-    <section ref={ref} className="border-y border-border bg-card/40">
+    <section id="stats" ref={ref} className="border-y border-border bg-card/40">
       <div className="mx-auto grid max-w-6xl gap-px bg-border sm:grid-cols-2 lg:grid-cols-4">
         {STATS.map((s) => (
           <div key={s.label} className="bg-card px-6 py-10 text-center">
