@@ -80,7 +80,7 @@ export function LandingNavbar({ scrollThreshold = DEFAULT_SCROLL_THRESHOLD }: La
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [scrollThreshold]);
 
   // Lock body scroll when mobile drawer is open
   useEffect(() => {
