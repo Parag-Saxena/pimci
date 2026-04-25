@@ -237,8 +237,8 @@ export function LandingNavbar() {
         </div>
       </header>
 
-      {/* Spacer to prevent layout shift since header is fixed */}
-      <div aria-hidden="true" className="h-16" />
+      {/* Header is fixed/floating — hero owns its own top spacing, no spacer needed */}
+
 
       {/* Mobile drawer */}
       <div
