@@ -9,7 +9,6 @@ import {
   PenSquare,
   LogOut,
   ChevronsUpDown,
-  UserCircle,
   Moon,
   Sun,
 } from "lucide-react";
