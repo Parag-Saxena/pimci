@@ -154,6 +154,21 @@ function AppShell() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  toggleTheme();
+                }}
+                className="cursor-pointer"
+              >
+                {dark ? (
+                  <Sun className="mr-2 h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Moon className="mr-2 h-4 w-4" aria-hidden="true" />
+                )}
+                {dark ? "Light mode" : "Dark mode"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={handleSignOut} className="cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
                 Log out
