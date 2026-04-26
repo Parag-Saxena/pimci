@@ -142,12 +142,6 @@ function AppShell() {
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link to="/app/settings" className="cursor-pointer">
-                  <UserCircle className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Profile
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/app/settings" className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" aria-hidden="true" />
                   Settings
                 </Link>
