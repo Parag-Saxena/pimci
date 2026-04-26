@@ -421,7 +421,7 @@ function ConnectedAccountsSection() {
   };
 
   return (
-    <section className="mt-6 rounded-xl border border-border bg-card p-6">
+    <section className="mt-6 rounded-xl border border-border bg-card p-4 sm:p-6">
       <h2 className="text-sm font-medium">Connected accounts</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Connect LinkedIn or X to publish posts directly. Without a connection, posts fall back to
