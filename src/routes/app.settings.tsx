@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertCircle, Loader2, Plug, Unplug, ExternalLink, History, Trash2, CheckCircle2, XCircle } from "lucide-react";
+import { AlertCircle, Loader2, Plug, Unplug, ExternalLink, History, Trash2, CheckCircle2, XCircle, Camera } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   getLinkedInHistory,
@@ -14,13 +14,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   listConnectedAccounts,
@@ -33,57 +26,86 @@ export const Route = createFileRoute("/app/settings")({
   component: SettingsPage,
 });
 
-const TIMEZONES = [
-  "UTC",
-  "America/Los_Angeles",
-  "America/Denver",
-  "America/Chicago",
-  "America/New_York",
-  "America/Sao_Paulo",
-  "Europe/London",
-  "Europe/Paris",
-  "Europe/Berlin",
-  "Africa/Lagos",
-  "Asia/Dubai",
-  "Asia/Kolkata",
-  "Asia/Singapore",
-  "Asia/Tokyo",
-  "Australia/Sydney",
-];
-
 function SettingsPage() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [timezone, setTimezone] = useState("UTC");
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!user) return;
     (async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, timezone")
+        .select("display_name, avatar_url")
         .eq("id", user.id)
         .maybeSingle();
       if (data) {
         setDisplayName(data.display_name ?? "");
         setAvatarUrl(data.avatar_url ?? "");
-        setTimezone(data.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC");
       }
     })();
   }, [user]);
+
+  const username = user?.email?.split("@")[0] ?? "";
 
   const save = async () => {
     if (!user) return;
     setBusy(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ display_name: displayName, avatar_url: avatarUrl, timezone })
+      .update({ display_name: displayName, avatar_url: avatarUrl })
       .eq("id", user.id);
     setBusy(false);
     if (error) toast.error("Save failed");
     else toast.success("Profile updated");
+  };
+
+  const handleAvatarPick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error("Image must be under 4MB");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+
+      const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = pub.publicUrl;
+
+      const { error: updErr } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("id", user.id);
+      if (updErr) throw updErr;
+
+      setAvatarUrl(publicUrl);
+      toast.success("Avatar updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const initials = (displayName || user?.email || "U")
@@ -100,53 +122,64 @@ function SettingsPage() {
 
       <section className="mt-8 rounded-xl border border-border bg-card p-6">
         <h2 className="text-sm font-medium">Profile</h2>
-        <div className="mt-5 flex items-center gap-4">
-          <Avatar className="h-16 w-16">
-            <AvatarImage src={avatarUrl} />
-            <AvatarFallback className="text-lg">{initials}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 space-y-1.5">
-            <Label htmlFor="avatar" className="text-xs">
-              Avatar URL
-            </Label>
-            <Input
-              id="avatar"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="https://…"
-            />
+
+        <div className="mt-5 flex items-center gap-5">
+          <button
+            type="button"
+            onClick={handleAvatarPick}
+            disabled={uploading}
+            aria-label="Change profile photo"
+            className="group relative h-20 w-20 overflow-hidden rounded-full border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Avatar className="h-20 w-20">
+              <AvatarImage src={avatarUrl} alt="" />
+              <AvatarFallback className="text-lg">{initials}</AvatarFallback>
+            </Avatar>
+            <div
+              className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 bg-black/55 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none"
+              aria-hidden="true"
+            >
+              {uploading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <>
+                  <Camera className="h-5 w-5" />
+                  <span className="text-[10px] font-medium">Change</span>
+                </>
+              )}
+            </div>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={handleAvatarChange}
+          />
+          <div className="text-xs text-muted-foreground">
+            Hover the photo to upload a new image. PNG or JPG, up to 4MB.
           </div>
         </div>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="name" className="text-xs">
-              Display name
+              Name
             </Label>
             <Input
               id="name"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Your name"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Email</Label>
-            <Input value={user?.email ?? ""} disabled />
+            <Label className="text-xs">Username</Label>
+            <Input value={username} disabled readOnly />
           </div>
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label className="text-xs">Timezone</Label>
-            <Select value={timezone} onValueChange={setTimezone}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TIMEZONES.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Email</Label>
+            <Input value={user?.email ?? ""} disabled readOnly />
           </div>
         </div>
 
@@ -158,16 +191,6 @@ function SettingsPage() {
       </section>
 
       <ConnectedAccountsSection />
-
-
-      <section className="mt-6 rounded-xl border border-border bg-card p-6">
-        <h2 className="text-sm font-medium">Account</h2>
-        <div className="mt-3">
-          <Button variant="outline" onClick={() => signOut()}>
-            Sign out
-          </Button>
-        </div>
-      </section>
     </div>
   );
 }

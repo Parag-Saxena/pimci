@@ -150,8 +150,8 @@ function Queue() {
     <div className="mx-auto max-w-5xl p-6 md:p-10">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Queue</h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">All your drafts, scheduled, and published posts.</p>
+          <h1 className="text-xl font-semibold tracking-tight">Library</h1>
+          <p className="mt-0.5 text-xs text-muted-foreground">All your drafts and published posts in one place.</p>
         </div>
         <Link to="/app/compose">
           <Button size="sm">

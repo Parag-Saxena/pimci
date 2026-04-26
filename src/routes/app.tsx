@@ -9,7 +9,6 @@ import {
   PenSquare,
   LogOut,
   ChevronsUpDown,
-  UserCircle,
   Moon,
   Sun,
 } from "lucide-react";
@@ -35,8 +34,7 @@ const NAV = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/app/compose", label: "Compose", icon: PenSquare, exact: false },
   { to: "/app/calendar", label: "Calendar", icon: Calendar, exact: false },
-  { to: "/app/queue", label: "Queue", icon: ListChecks, exact: false },
-  { to: "/app/settings", label: "Settings", icon: Settings, exact: false },
+  { to: "/app/queue", label: "Library", icon: ListChecks, exact: false },
 ] as const;
 
 function AppShell() {
@@ -141,12 +139,6 @@ function AppShell() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/app/settings" className="cursor-pointer">
-                  <UserCircle className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Profile
-                </Link>
-              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/app/settings" className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" aria-hidden="true" />
