@@ -85,7 +85,6 @@ export function AppNav({ items, currentPath }: Props) {
     >
       {/* Hidden measurement row — full-size copies of every nav item */}
       <div
-        ref={measureRef}
         aria-hidden="true"
         className="pointer-events-none invisible absolute left-0 top-0 flex items-center gap-1"
       >
