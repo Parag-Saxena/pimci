@@ -1,5 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
+import { zodValidator } from "@tanstack/zod-adapter";
 import { format } from "date-fns";
 import { Copy, ExternalLink, Trash2, CheckCircle2, Sparkles, Filter, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,12 +28,21 @@ import {
 import { publishPost } from "@/utils/social.functions";
 import { stripMarkdown } from "@/lib/preflight";
 
-export const Route = createFileRoute("/app/queue")({
-  component: Queue,
+const STATUS_VALUES = ["all", "draft", "scheduled", "ready", "published", "failed"] as const;
+const PLATFORM_VALUES = ["all", "linkedin", "x"] as const;
+
+const librarySearchSchema = z.object({
+  status: z.enum(STATUS_VALUES).optional().default("all"),
+  platform: z.enum(PLATFORM_VALUES).optional().default("all"),
 });
 
-type Status = "all" | "draft" | "scheduled" | "ready" | "published" | "failed";
-type PlatformFilter = "all" | Platform;
+export const Route = createFileRoute("/app/queue")({
+  component: Queue,
+  validateSearch: zodValidator(librarySearchSchema),
+});
+
+type Status = (typeof STATUS_VALUES)[number];
+type PlatformFilter = (typeof PLATFORM_VALUES)[number];
 
 type PostRow = {
   id: string;
@@ -46,13 +57,17 @@ type PostRow = {
 function Queue() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { status, platform } = Route.useSearch();
   const [posts, setPosts] = useState<PostRow[]>([]);
-  const [status, setStatus] = useState<Status>("all");
-  const [platform, setPlatform] = useState<PlatformFilter>("all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const publishPostFn = useServerFn(publishPost);
+
+  const setStatus = (next: Status) =>
+    navigate({ to: "/app/queue", search: { status: next, platform } });
+  const setPlatform = (next: PlatformFilter) =>
+    navigate({ to: "/app/queue", search: { status, platform: next } });
 
   const load = async () => {
     if (!user) return;
