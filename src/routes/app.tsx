@@ -163,26 +163,6 @@ function AppShell() {
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-xl">
-          <div className="md:hidden">
-            <Link to="/app" className="flex items-center gap-2" aria-label="Pimci home">
-              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                <Layers className="h-3.5 w-3.5" aria-hidden="true" />
-              </div>
-              <span className="text-sm font-semibold">Pimci</span>
-            </Link>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <ThemeToggle />
-            <Link to="/app/compose">
-              <Button size="sm">
-                <PenSquare className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                New post
-              </Button>
-            </Link>
-          </div>
-        </header>
-
         {/* Mobile bottom nav */}
         <nav
           aria-label="Primary"
@@ -208,8 +188,8 @@ function AppShell() {
           })}
         </nav>
 
-        <main className="flex-1 overflow-auto p-4 pb-20 md:p-6 md:pb-6">
-          <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm">
+        <main className="flex-1 overflow-hidden pb-16 md:pb-0">
+          <div className="h-full overflow-auto rounded-lg border border-border bg-card text-card-foreground shadow-lg">
             <Outlet />
           </div>
         </main>
