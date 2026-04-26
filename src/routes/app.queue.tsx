@@ -57,13 +57,17 @@ type PostRow = {
 function Queue() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { status, platform } = Route.useSearch();
   const [posts, setPosts] = useState<PostRow[]>([]);
-  const [status, setStatus] = useState<Status>("all");
-  const [platform, setPlatform] = useState<PlatformFilter>("all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const publishPostFn = useServerFn(publishPost);
+
+  const setStatus = (next: Status) =>
+    navigate({ to: "/app/queue", search: (prev) => ({ ...prev, status: next }) });
+  const setPlatform = (next: PlatformFilter) =>
+    navigate({ to: "/app/queue", search: (prev) => ({ ...prev, platform: next }) });
 
   const load = async () => {
     if (!user) return;
