@@ -26,16 +26,15 @@ function isActive(item: NavItem, path: string) {
 }
 
 /**
- * Responsive top-nav that progressively collapses items into a "More"
- * overflow menu when there isn't enough horizontal space. Uses real-DOM
- * measurements via ResizeObserver — no hard-coded breakpoints.
+ * Responsive top-nav: shows all items inline when they fit, otherwise
+ * collapses the entire nav into a single hamburger menu. Uses real-DOM
+ * measurement via ResizeObserver — no hard-coded breakpoints.
  */
 export function AppNav({ items, currentPath }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Array<HTMLAnchorElement | null>>([]);
-  const moreRef = useRef<HTMLButtonElement>(null);
 
-  const [visibleCount, setVisibleCount] = useState(items.length);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -43,30 +42,13 @@ export function AppNav({ items, currentPath }: Props) {
 
     const measure = () => {
       const widths = itemRefs.current.map((el) => (el ? el.offsetWidth : 0));
-      const moreWidth = moreRef.current?.offsetWidth ?? 0;
       const gap = 4; // gap-1
-      const available = container.clientWidth;
-
-      // Fit-all check
       const totalAll = widths.reduce(
         (sum, w, i) => sum + w + (i > 0 ? gap : 0),
         0,
       );
-      if (totalAll <= available) {
-        setVisibleCount(items.length);
-        return;
-      }
-
-      // Reserve room for the More button + its gap
-      let used = moreWidth + gap;
-      let count = 0;
-      for (let i = 0; i < widths.length; i++) {
-        const next = used + widths[i] + (i > 0 ? gap : 0);
-        if (next > available) break;
-        used = next;
-        count++;
-      }
-      setVisibleCount(count);
+      // Small safety buffer so we don't toggle right at the edge
+      setCollapsed(totalAll > container.clientWidth - 8);
     };
 
     measure();
@@ -75,8 +57,7 @@ export function AppNav({ items, currentPath }: Props) {
     return () => ro.disconnect();
   }, [items]);
 
-  const visibleItems = items.slice(0, visibleCount);
-  const overflowItems = items.slice(visibleCount);
+  const showInline = !collapsed;
 
   return (
     <div
