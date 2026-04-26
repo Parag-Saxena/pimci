@@ -65,9 +65,9 @@ function Queue() {
   const publishPostFn = useServerFn(publishPost);
 
   const setStatus = (next: Status) =>
-    navigate({ to: "/app/queue", search: (prev) => ({ ...prev, status: next }) });
+    navigate({ to: "/app/queue", search: { status: next, platform } });
   const setPlatform = (next: PlatformFilter) =>
-    navigate({ to: "/app/queue", search: (prev) => ({ ...prev, platform: next }) });
+    navigate({ to: "/app/queue", search: { status, platform: next } });
 
   const load = async () => {
     if (!user) return;
