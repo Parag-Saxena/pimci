@@ -226,15 +226,8 @@ function AppShellSkeleton() {
 
       {/* Main skeleton */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-background/80 px-6">
-          <Skeleton className="h-6 w-28 md:hidden" />
-          <div className="ml-auto flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-md" />
-            <Skeleton className="h-8 w-24 rounded-md" />
-          </div>
-        </header>
-        <main className="flex-1 overflow-auto p-6 pb-16 md:pb-0">
-          <div className="mx-auto max-w-5xl space-y-6">
+        <main className="flex-1 overflow-hidden pb-16 md:pb-0">
+          <div className="h-full overflow-auto rounded-lg border border-border bg-card p-6 shadow-lg">
             <div className="space-y-2">
               <Skeleton className="h-7 w-48" />
               <Skeleton className="h-4 w-72" />
