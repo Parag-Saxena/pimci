@@ -1,72 +1,60 @@
+## Goal
+Ditch the left sidebar in the `/app` shell. The four nav items (Dashboard, Compose, Calendar, Library) move into a **top navbar**, centered, with the **Pimci logo on the left**. The **user info sits at the bottom-left** of the screen, and an **icon-only dropdown trigger sits at the bottom-right**, with all account details (name, email, settings, theme switch, logout) tucked inside the dropdown. The theme switch becomes an SVG-only icon next to the username inside the dropdown header.
 
-# SocialDeck — AI-powered post composer & scheduler for LinkedIn and X
+## Changes
 
-A clean, production-grade tool to write, AI-generate, schedule, and (later) auto-publish posts to LinkedIn and X.
+### 1. `src/routes/app.tsx` — full layout rewrite
+**Remove**
+- The entire `<aside>` left sidebar (logo block, nav list, account dropdown at bottom).
+- The mobile bottom-tab `<nav>` (replaced by the same top navbar, which works on mobile too).
+- Sidebar-specific skeleton.
 
-## Stack note
-We'll build on Lovable's stack: **TanStack Start (React) + Lovable Cloud (Postgres/Auth/Storage) + Lovable AI**. Same product, different infra than your original Next.js/MongoDB/AWS spec — fully portable later.
+**Add — Top Navbar (sticky, full-width)**
+- Sticky `<header>` at the top of the shell:
+  - **Left**: Pimci logo + wordmark (links to `/app`).
+  - **Center**: NAV items as horizontal pill links with the existing active-state styling (active = `bg-sidebar-accent text-sidebar-accent-foreground`, idle = muted hover). Use `flex-1 justify-center` so the group is visually centered between logo and right edge. On narrow viewports, hide labels and show icons only (≤ `sm`), keep labels from `md` up.
+  - **Right**: empty for now (keeps header balanced; no user info here).
+- Keeps the existing `aria-current="page"` and focus-ring patterns.
 
-## v1 Scope (this build)
+**Add — Bottom bar (fixed, full-width)**
+- A `fixed bottom-0 inset-x-0` bar with:
+  - **Left**: Avatar + display name + email (truncated). Plain, non-interactive info block.
+  - **Right**: `DropdownMenu` whose trigger is an **icon-only** button (`ChevronsUpDown` or `MoreHorizontal` in a small ghost button, `aria-label="Account menu"`).
+- Dropdown content (`side="top" align="end"`) contains everything currently in the sidebar dropdown:
+  - **Header row**: avatar + username on the left, **theme toggle as an SVG icon button** on the right (Sun/Moon swap based on `dark`). Icon-only, `aria-label="Toggle theme"`. No text label — purely the SVG, per request.
+  - Email line under the username.
+  - Separator.
+  - `Settings` item → `/app/settings`.
+  - Separator.
+  - `Log out` item.
+- Remove the previous "Light mode / Dark mode" text item from the menu list (it's now the SVG toggle in the header row).
 
-### 1. Auth & accounts
-- Email/password + Google sign-in
-- Lightweight user profile (name, avatar, timezone)
-- Per-user data isolation (RLS)
+**Main content area**
+- Stays as the elevated rounded card with the existing hover/focus micro-interactions.
+- Adjust spacing: add top padding/offset for the sticky header height and bottom padding to clear the fixed bottom bar (e.g. `pt-14 pb-16`).
+- Remove the `z-0`/`z-10` sidebar overlay logic (no longer needed); keep card shadow + transitions intact.
 
-### 2. Composer (manual & AI-assisted)
-- Side-by-side editor with **per-platform tabs** (LinkedIn / X)
-- Live character counter, link preview, hashtag suggestions
-- Per-platform formatting rules (X = 280 chars, LinkedIn = long-form, line-break friendly)
-- Save as draft, duplicate, delete
-- "Variants" — one brief produces 3 tailored drafts
+**Skeleton**
+- Replace the sidebar skeleton with a top-navbar skeleton (logo placeholder + 4 short nav placeholders) and a bottom-bar skeleton (avatar + two text lines on the left, small circle on the right). Card skeleton in the middle stays.
 
-### 3. AI generation (Lovable AI)
-- **Brief → posts**: topic + tone + platform → 3–5 variants
-- **Trend ideation**: pick an industry/niche → AI suggests 5 post angles based on its general knowledge of what performs (clearly labeled — not real-time scraping, since LinkedIn/X don't allow that)
-- **Rewrite tools** on any draft: shorten, lengthen, change tone, make it a thread (X), turn it into a hook + body (LinkedIn)
+**Imports cleanup**
+- Drop `Layers` only if logo styling changes; otherwise keep. Keep `Sun`, `Moon`, `Settings`, `LogOut`, `ChevronsUpDown`. Add a small icon for the bottom-right trigger if we go with `ChevronsUpDown` (already imported).
 
-### 4. Scheduling
-- Pick date + time per draft (timezone-aware)
-- **Calendar view** (month + week) showing scheduled posts color-coded by platform
-- **List/queue view** with filters: status (draft/scheduled/published/failed), platform, date range
-- Drag-to-reschedule on calendar
-- "Best time to post" hints (static heuristics in v1; can wire to real analytics later)
+### 2. No other files need changes
+- `ThemeToggle.tsx` already exposes `useThemeToggle()` returning `{ dark, toggle }` — reused as-is for the SVG-only toggle in the dropdown header.
+- Routes, auth, and dropdown primitives are unchanged.
 
-### 5. Publishing — copy/post for v1, real APIs as a follow-up
-- At scheduled time, the post enters a "Ready to publish" queue with a one-click copy + open-platform action and a notification
-- Mark as published manually
-- **Reason**: real LinkedIn + X publishing requires you to register developer apps on both platforms (LinkedIn Marketing Developer Platform approval, X API paid tier) and provide OAuth credentials. We'll build the publishing pipeline so it's ready to flip on once you have those — but won't block v1 on approvals that take days/weeks.
+## Responsive behavior
+- **≥ md**: Top navbar shows icon + label for each nav item, centered. Bottom bar shows full avatar + name + email on the left, icon trigger on the right.
+- **< md**: Top navbar shows icon-only nav items (still centered). Bottom bar shrinks: avatar + name only (email hidden), icon trigger on the right. All nav remains reachable from the top bar, so the old mobile bottom-tabs are no longer needed.
 
-### 6. Dashboard
-- Quick stats: drafts, scheduled this week, published this month
-- Upcoming queue (next 5 posts)
-- Quick "New post" CTA
+## Accessibility
+- `aria-label="Primary"` on the top `<nav>`.
+- `aria-current="page"` on active nav links (unchanged).
+- Icon-only buttons get explicit `aria-label`s ("Account menu", "Toggle theme").
+- Dropdown items keep `cursor-pointer` and keyboard activation behavior.
+- `motion-reduce` classes on the content card stay in place.
 
-## Pages
-- `/` — marketing landing (hero, features, CTA to sign up)
-- `/auth` — sign in / sign up
-- `/app` — dashboard (post-login home)
-- `/app/compose` — composer (manual + AI)
-- `/app/calendar` — scheduling calendar
-- `/app/queue` — list of all posts with filters
-- `/app/settings` — profile, timezone, (later) connected accounts
-
-## Data model (Lovable Cloud)
-- `profiles` — user profile + timezone
-- `posts` — id, user_id, platform, content, status, scheduled_at, published_at, ai_generated, source_brief
-- `post_variants` — groups variants generated from one brief
-- `ai_generations` — log of prompts + outputs (for "regenerate" history)
-
-## Design direction
-- **Minimal, production-grade**: think Linear + Notion restraint. Generous whitespace, one accent color, neutral surfaces.
-- **Light + dark mode**, system default
-- **Micro-interactions**: smooth tab transitions in composer, subtle character-counter color shift as you approach limits, calendar drag feedback, AI "generating…" shimmer, success toasts with icon morph, hover lift on post cards
-- **Typography**: Inter for UI, slightly tighter tracking for headings
-- **Iconography**: Lucide, consistent stroke
-
-## Phase 2 (after v1 ships)
-- Real publishing via LinkedIn + X OAuth (you'll need to register dev apps)
-- Multiple connected accounts per platform
-- Team workspaces & approval flows
-- Analytics (impressions, engagement) once real publishing is live
-- Image attachments + AI image generation per post
+## Out of scope
+- No changes to individual `/app/*` route content.
+- No changes to auth, data, or routing logic.
