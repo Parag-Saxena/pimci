@@ -43,6 +43,7 @@ function AppShell() {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { dark, toggle: toggleTheme } = useThemeToggle();
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
