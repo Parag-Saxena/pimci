@@ -100,9 +100,6 @@ function Hero() {
                 <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </CornerBracketButton>
             </Link>
-            <a href="#demo">
-              <Button size="lg" variant="ghost">Watch demo</Button>
-            </a>
           </div>
           <div className="mt-8 flex items-center gap-5 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
