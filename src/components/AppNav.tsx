@@ -26,16 +26,15 @@ function isActive(item: NavItem, path: string) {
 }
 
 /**
- * Responsive top-nav that progressively collapses items into a "More"
- * overflow menu when there isn't enough horizontal space. Uses real-DOM
- * measurements via ResizeObserver — no hard-coded breakpoints.
+ * Responsive top-nav: shows all items inline when they fit, otherwise
+ * collapses the entire nav into a single hamburger menu. Uses real-DOM
+ * measurement via ResizeObserver — no hard-coded breakpoints.
  */
 export function AppNav({ items, currentPath }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Array<HTMLAnchorElement | null>>([]);
-  const moreRef = useRef<HTMLButtonElement>(null);
 
-  const [visibleCount, setVisibleCount] = useState(items.length);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -43,30 +42,13 @@ export function AppNav({ items, currentPath }: Props) {
 
     const measure = () => {
       const widths = itemRefs.current.map((el) => (el ? el.offsetWidth : 0));
-      const moreWidth = moreRef.current?.offsetWidth ?? 0;
       const gap = 4; // gap-1
-      const available = container.clientWidth;
-
-      // Fit-all check
       const totalAll = widths.reduce(
         (sum, w, i) => sum + w + (i > 0 ? gap : 0),
         0,
       );
-      if (totalAll <= available) {
-        setVisibleCount(items.length);
-        return;
-      }
-
-      // Reserve room for the More button + its gap
-      let used = moreWidth + gap;
-      let count = 0;
-      for (let i = 0; i < widths.length; i++) {
-        const next = used + widths[i] + (i > 0 ? gap : 0);
-        if (next > available) break;
-        used = next;
-        count++;
-      }
-      setVisibleCount(count);
+      // Small safety buffer so we don't toggle right at the edge
+      setCollapsed(totalAll > container.clientWidth - 8);
     };
 
     measure();
@@ -75,8 +57,7 @@ export function AppNav({ items, currentPath }: Props) {
     return () => ro.disconnect();
   }, [items]);
 
-  const visibleItems = items.slice(0, visibleCount);
-  const overflowItems = items.slice(visibleCount);
+  const showInline = !collapsed;
 
   return (
     <div
@@ -103,85 +84,71 @@ export function AppNav({ items, currentPath }: Props) {
             </a>
           );
         })}
-        <button
-          ref={moreRef}
-          type="button"
-          className="inline-flex h-8 items-center gap-2 rounded-md px-3 text-sm"
-        >
-          <Menu className="h-4 w-4" aria-hidden="true" />
-          <span>More</span>
-        </button>
       </div>
 
-      {/* Visible nav */}
-      <nav
-        aria-label="Primary"
-        className="flex items-center justify-center gap-1"
-      >
-        {visibleItems.map((item) => {
-          const active = isActive(item, currentPath);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              aria-current={active ? "page" : undefined}
-              aria-label={item.label}
-              title={item.label}
-              className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
-              )}
-            >
-              <Icon className="h-4 w-4" aria-hidden="true" />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-
-        {overflowItems.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                aria-label={`More navigation (${overflowItems.length} item${overflowItems.length === 1 ? "" : "s"})`}
+      {/* Visible nav — inline OR collapsed into a single hamburger */}
+      {showInline ? (
+        <nav
+          aria-label="Primary"
+          className="flex items-center justify-center gap-1"
+        >
+          {items.map((item) => {
+            const active = isActive(item, currentPath);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                aria-current={active ? "page" : undefined}
+                aria-label={item.label}
+                title={item.label}
                 className={cn(
-                  "inline-flex h-8 items-center gap-2 rounded-md px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  overflowItems.some((i) => isActive(i, currentPath))
+                  "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
                 )}
               >
-                <Menu className="h-4 w-4" aria-hidden="true" />
-                <span className="sr-only sm:not-sr-only">More</span>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-48">
-              {overflowItems.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item, currentPath);
-                return (
-                  <DropdownMenuItem key={item.to} asChild>
-                    <Link
-                      to={item.to}
-                      aria-current={active ? "page" : undefined}
-                      className={cn(
-                        "cursor-pointer",
-                        active && "bg-accent text-accent-foreground",
-                      )}
-                    >
-                      <Icon className="mr-2 h-4 w-4" aria-hidden="true" />
-                      {item.label}
-                    </Link>
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </nav>
+                <Icon className="h-4 w-4" aria-hidden="true" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Open navigation menu"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Menu className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="center" className="w-56">
+            {items.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item, currentPath);
+              return (
+                <DropdownMenuItem key={item.to} asChild>
+                  <Link
+                    to={item.to}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "cursor-pointer",
+                      active && "bg-accent text-accent-foreground",
+                    )}
+                  >
+                    <Icon className="mr-2 h-4 w-4" aria-hidden="true" />
+                    {item.label}
+                  </Link>
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 }
