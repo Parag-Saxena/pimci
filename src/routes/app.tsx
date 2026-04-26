@@ -8,7 +8,7 @@ import {
   Layers,
   PenSquare,
   LogOut,
-  ChevronsUpDown,
+  
   Moon,
   Sun,
 } from "lucide-react";
@@ -189,7 +189,7 @@ function AppShellSkeleton() {
   return (
     <div className="flex min-h-screen flex-col bg-background" aria-busy="true" aria-live="polite">
       {/* Top navbar skeleton */}
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background px-4">
+      <header className="sticky top-3 z-30 mx-3 flex h-14 items-center gap-3 rounded-xl border border-border bg-background px-4 shadow-lg">
         <div className="flex items-center gap-2">
           <Skeleton className="h-7 w-7 rounded-md" />
           <Skeleton className="h-4 w-16" />
@@ -199,11 +199,11 @@ function AppShellSkeleton() {
             <Skeleton key={i} className="h-7 w-20 rounded-md" />
           ))}
         </div>
-        <div className="w-7" />
+        <Skeleton className="h-8 w-8 rounded-full" />
       </header>
 
       {/* Main skeleton */}
-      <main className="flex-1 overflow-hidden px-3 pb-16 pt-3">
+      <main className="flex-1 overflow-hidden px-3 pb-3 pt-3">
         <div className="h-full overflow-auto rounded-xl border border-border bg-card p-6 shadow-xl">
           <div className="space-y-2">
             <Skeleton className="h-7 w-48" />
@@ -219,18 +219,6 @@ function AppShellSkeleton() {
           </div>
         </div>
       </main>
-
-      {/* Bottom bar skeleton */}
-      <div className="fixed inset-x-0 bottom-0 z-30 flex h-14 items-center justify-between gap-3 border-t border-border bg-background px-4">
-        <div className="flex items-center gap-2.5">
-          <Skeleton className="h-7 w-7 rounded-full" />
-          <div className="space-y-1.5">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="h-2.5 w-28" />
-          </div>
-        </div>
-        <Skeleton className="h-8 w-8 rounded-md" />
-      </div>
     </div>
   );
 }
