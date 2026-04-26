@@ -71,7 +71,7 @@ function AppShell() {
   return (
     <div className="flex min-h-screen bg-background">
       {/* Sidebar — sticky */}
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
+      <aside className="sticky top-0 z-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
         <Link
           to="/app"
           className="flex h-14 items-center gap-2 border-b border-border px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
