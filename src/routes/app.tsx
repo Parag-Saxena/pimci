@@ -8,7 +8,7 @@ import {
   Layers,
   PenSquare,
   LogOut,
-  ChevronsUpDown,
+  
   Moon,
   Sun,
 } from "lucide-react";
@@ -67,8 +67,8 @@ function AppShell() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* Top navbar */}
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {/* Top navbar — elevated */}
+      <header className="sticky top-3 z-30 mx-3 flex h-14 items-center gap-3 rounded-xl border border-border bg-background/80 px-4 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/60">
         {/* Left: logo */}
         <Link
           to="/app"
@@ -110,54 +110,21 @@ function AppShell() {
           })}
         </nav>
 
-        {/* Right: spacer for balance */}
-        <div className="w-7 shrink-0" aria-hidden="true" />
-      </header>
-
-      {/* Main */}
-      <main className="flex-1 overflow-hidden px-3 pb-16 pt-3">
-        <div
-          tabIndex={-1}
-          className={cn(
-            "group/card h-full overflow-auto rounded-xl border border-border bg-card text-card-foreground shadow-xl outline-none ring-0",
-            "transition-[transform,box-shadow] duration-300 ease-out will-change-transform",
-            "hover:-translate-y-0.5 hover:shadow-2xl",
-            "focus-within:-translate-y-0.5 focus-within:shadow-2xl focus-within:ring-2 focus-within:ring-ring/40",
-            "motion-reduce:transition-none motion-reduce:transform-none motion-reduce:hover:translate-y-0 motion-reduce:focus-within:translate-y-0",
-          )}
-        >
-          <Outlet />
-        </div>
-      </main>
-
-      {/* Bottom bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 flex h-14 items-center justify-between gap-3 border-t border-border bg-background/80 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        {/* Left: user info */}
-        <div className="flex min-w-0 items-center gap-2.5">
-          <Avatar className="h-7 w-7 shrink-0">
-            <AvatarImage src={user.user_metadata?.avatar_url} alt="" />
-            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <div className="truncate text-sm font-medium leading-tight">{username}</div>
-            <div className="hidden truncate text-xs text-muted-foreground leading-tight md:block">
-              {user.email}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: icon-only dropdown */}
+        {/* Right: avatar-only account dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Account menu"
+              className="rounded-full ring-offset-background transition-shadow hover:ring-2 hover:ring-ring/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              aria-label={`Account menu for ${username}`}
             >
-              <ChevronsUpDown className="h-4 w-4" aria-hidden="true" />
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={user.user_metadata?.avatar_url} alt="" />
+                <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+              </Avatar>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent side="top" align="end" className="w-64">
+          <DropdownMenuContent side="bottom" align="end" className="w-64">
             {/* Header row: avatar+name on left, theme toggle SVG on right */}
             <div className="flex items-center gap-2 px-2 py-1.5">
               <Avatar className="h-8 w-8 shrink-0">
@@ -197,7 +164,23 @@ function AppShell() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </header>
+
+      {/* Main */}
+      <main className="flex-1 overflow-hidden px-3 pb-3 pt-3">
+        <div
+          tabIndex={-1}
+          className={cn(
+            "group/card h-full w-full overflow-auto rounded-xl border border-border bg-card text-card-foreground shadow-xl outline-none ring-0",
+            "transition-[transform,box-shadow] duration-300 ease-out will-change-transform",
+            "hover:-translate-y-0.5 hover:shadow-2xl",
+            "focus-within:-translate-y-0.5 focus-within:shadow-2xl focus-within:ring-2 focus-within:ring-ring/40",
+            "motion-reduce:transition-none motion-reduce:transform-none motion-reduce:hover:translate-y-0 motion-reduce:focus-within:translate-y-0",
+          )}
+        >
+          <Outlet />
+        </div>
+      </main>
     </div>
   );
 }
@@ -206,7 +189,7 @@ function AppShellSkeleton() {
   return (
     <div className="flex min-h-screen flex-col bg-background" aria-busy="true" aria-live="polite">
       {/* Top navbar skeleton */}
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background px-4">
+      <header className="sticky top-3 z-30 mx-3 flex h-14 items-center gap-3 rounded-xl border border-border bg-background px-4 shadow-lg">
         <div className="flex items-center gap-2">
           <Skeleton className="h-7 w-7 rounded-md" />
           <Skeleton className="h-4 w-16" />
@@ -216,11 +199,11 @@ function AppShellSkeleton() {
             <Skeleton key={i} className="h-7 w-20 rounded-md" />
           ))}
         </div>
-        <div className="w-7" />
+        <Skeleton className="h-8 w-8 rounded-full" />
       </header>
 
       {/* Main skeleton */}
-      <main className="flex-1 overflow-hidden px-3 pb-16 pt-3">
+      <main className="flex-1 overflow-hidden px-3 pb-3 pt-3">
         <div className="h-full overflow-auto rounded-xl border border-border bg-card p-6 shadow-xl">
           <div className="space-y-2">
             <Skeleton className="h-7 w-48" />
@@ -236,18 +219,6 @@ function AppShellSkeleton() {
           </div>
         </div>
       </main>
-
-      {/* Bottom bar skeleton */}
-      <div className="fixed inset-x-0 bottom-0 z-30 flex h-14 items-center justify-between gap-3 border-t border-border bg-background px-4">
-        <div className="flex items-center gap-2.5">
-          <Skeleton className="h-7 w-7 rounded-full" />
-          <div className="space-y-1.5">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="h-2.5 w-28" />
-          </div>
-        </div>
-        <Skeleton className="h-8 w-8 rounded-md" />
-      </div>
     </div>
   );
 }
