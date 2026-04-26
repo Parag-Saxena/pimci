@@ -624,7 +624,7 @@ function Compose() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-6 md:p-10 animate-fade-in">
+    <div className="w-full p-6 md:p-10 animate-fade-in">
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Compose</h1>
@@ -1344,7 +1344,7 @@ function TrendDialog({
 function ComposeSkeleton() {
   return (
     <div
-      className="mx-auto max-w-3xl p-6 md:p-10"
+      className="w-full p-6 md:p-10"
       aria-busy="true"
       aria-live="polite"
     >

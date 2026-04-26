@@ -69,7 +69,7 @@ function AppShell() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Top navbar — elevated */}
-      <header className="sticky top-3 z-30 mx-3 flex h-14 items-center gap-3 rounded-xl border border-border bg-background/80 px-4 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="z-30 mx-3 mb-3 mt-3 flex h-14 items-center gap-3 rounded-xl border border-border bg-background/80 px-4 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/60">
         {/* Left: logo */}
         <Link
           to="/app"
@@ -142,7 +142,7 @@ function AppShell() {
       </header>
 
       {/* Main */}
-      <main className="flex-1 overflow-hidden px-3 pb-3 pt-3">
+      <main className="flex-1 overflow-hidden px-3 pb-3">
         <div
           tabIndex={-1}
           className={cn(
@@ -164,7 +164,7 @@ function AppShellSkeleton() {
   return (
     <div className="flex min-h-screen flex-col bg-background" aria-busy="true" aria-live="polite">
       {/* Top navbar skeleton */}
-      <header className="sticky top-3 z-30 mx-3 flex h-14 items-center gap-3 rounded-xl border border-border bg-background px-4 shadow-lg">
+      <header className="z-30 mx-3 mb-3 mt-3 flex h-14 items-center gap-3 rounded-xl border border-border bg-background px-4 shadow-lg">
         <div className="flex items-center gap-2">
           <Skeleton className="h-7 w-7 rounded-md" />
           <Skeleton className="h-4 w-16" />
