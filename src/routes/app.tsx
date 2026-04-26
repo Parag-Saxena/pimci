@@ -205,8 +205,17 @@ function AppShell() {
           })}
         </nav>
 
-        <main className="flex-1 overflow-hidden pb-16 md:pb-0">
-          <div className="h-full overflow-auto rounded-lg border border-border bg-card text-card-foreground shadow-lg">
+        <main className="relative z-10 flex-1 overflow-hidden pb-16 md:pb-0">
+          <div
+            tabIndex={-1}
+            className={cn(
+              "group/card h-full overflow-auto rounded-xl border border-border bg-card text-card-foreground shadow-xl outline-none ring-0",
+              "transition-[transform,box-shadow] duration-300 ease-out will-change-transform",
+              "hover:-translate-y-0.5 hover:shadow-2xl",
+              "focus-within:-translate-y-0.5 focus-within:shadow-2xl focus-within:ring-2 focus-within:ring-ring/40",
+              "motion-reduce:transition-none motion-reduce:transform-none motion-reduce:hover:translate-y-0 motion-reduce:focus-within:translate-y-0",
+            )}
+          >
             <Outlet />
           </div>
         </main>
