@@ -199,13 +199,13 @@ function Dashboard() {
   );
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 p-6 md:p-10">
-      <div className="flex items-end justify-between">
-        <div>
+    <div className="mx-auto max-w-5xl space-y-8 p-4 sm:p-6 md:p-10">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">Welcome back, {name}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Here's your posting at a glance.</p>
         </div>
-        <Link to="/app/compose">
+        <Link to="/app/compose" className="self-start sm:self-auto">
           <Button>
             <Sparkles className="mr-1.5 h-4 w-4" />
             New post
@@ -270,7 +270,7 @@ function Dashboard() {
 
       {/* Analytics: scheduled vs published + trend */}
       <section className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-xl border border-border bg-card p-5 lg:col-span-2">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-sm font-medium">Publishing activity</h2>
@@ -351,7 +351,7 @@ function Dashboard() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-5">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
           <h2 className="text-sm font-medium">By platform</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">All-time scheduled vs published</p>
           <div className="mt-4 space-y-4">

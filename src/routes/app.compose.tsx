@@ -624,9 +624,9 @@ function Compose() {
   }
 
   return (
-    <div className="w-full p-6 md:p-10 animate-fade-in">
-      <div className="mb-5 flex items-center justify-between">
-        <div>
+    <div className="w-full p-4 sm:p-6 md:p-10 animate-fade-in">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight">Compose</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {draft.id ? "Editing" : "New post"} ·{" "}
@@ -637,7 +637,7 @@ function Compose() {
                 : "All changes saved"}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -1344,7 +1344,7 @@ function TrendDialog({
 function ComposeSkeleton() {
   return (
     <div
-      className="w-full p-6 md:p-10"
+      className="w-full p-4 sm:p-6 md:p-10"
       aria-busy="true"
       aria-live="polite"
     >

@@ -116,14 +116,14 @@ function SettingsPage() {
     .toUpperCase();
 
   return (
-    <div className="mx-auto max-w-2xl p-6 md:p-10">
+    <div className="mx-auto max-w-2xl p-4 sm:p-6 md:p-10">
       <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
       <p className="mt-0.5 text-xs text-muted-foreground">Profile and preferences.</p>
 
-      <section className="mt-8 rounded-xl border border-border bg-card p-6">
+      <section className="mt-8 rounded-xl border border-border bg-card p-4 sm:p-6">
         <h2 className="text-sm font-medium">Profile</h2>
 
-        <div className="mt-5 flex items-center gap-5">
+        <div className="mt-5 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5">
           <button
             type="button"
             onClick={handleAvatarPick}
@@ -421,7 +421,7 @@ function ConnectedAccountsSection() {
   };
 
   return (
-    <section className="mt-6 rounded-xl border border-border bg-card p-6">
+    <section className="mt-6 rounded-xl border border-border bg-card p-4 sm:p-6">
       <h2 className="text-sm font-medium">Connected accounts</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Connect LinkedIn or X to publish posts directly. Without a connection, posts fall back to

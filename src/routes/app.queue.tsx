@@ -162,13 +162,13 @@ function Queue() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl p-6 md:p-10">
-      <div className="mb-5 flex items-center justify-between">
-        <div>
+    <div className="mx-auto max-w-5xl p-4 sm:p-6 md:p-10">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight">Library</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">All your drafts and published posts in one place.</p>
         </div>
-        <Link to="/app/compose">
+        <Link to="/app/compose" className="self-start sm:self-auto">
           <Button size="sm">
             <Sparkles className="mr-1.5 h-3.5 w-3.5" />
             New post
@@ -178,17 +178,17 @@ function Queue() {
 
       {/* Filters */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <Filter className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search content…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-64 pl-8"
+            className="w-full pl-8 sm:w-64"
           />
         </div>
         <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="w-[150px] flex-1 sm:flex-initial">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -201,7 +201,7 @@ function Queue() {
           </SelectContent>
         </Select>
         <Select value={platform} onValueChange={(v) => setPlatform(v as PlatformFilter)}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[140px] flex-1 sm:flex-initial">
             <SelectValue placeholder="Platform" />
           </SelectTrigger>
           <SelectContent>
