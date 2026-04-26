@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Menu, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,9 +21,6 @@ type Props = {
   currentPath: string;
 };
 
-const isoLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
-
 function isActive(item: NavItem, path: string) {
   return item.exact ? path === item.to : path.startsWith(item.to);
 }
@@ -35,24 +32,22 @@ function isActive(item: NavItem, path: string) {
  */
 export function AppNav({ items, currentPath }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  // Hidden measuring row that always renders all items at full size
-  const measureRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Array<HTMLAnchorElement | null>>([]);
   const moreRef = useRef<HTMLButtonElement>(null);
 
   const [visibleCount, setVisibleCount] = useState(items.length);
 
-  isoLayoutEffect(() => {
+  useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const measure = () => {
       const widths = itemRefs.current.map((el) => (el ? el.offsetWidth : 0));
       const moreWidth = moreRef.current?.offsetWidth ?? 0;
-      const gap = 4; // matches gap-1 (0.25rem)
+      const gap = 4; // gap-1
       const available = container.clientWidth;
 
-      // Try fitting all items first
+      // Fit-all check
       const totalAll = widths.reduce(
         (sum, w, i) => sum + w + (i > 0 ? gap : 0),
         0,
@@ -62,11 +57,11 @@ export function AppNav({ items, currentPath }: Props) {
         return;
       }
 
-      // Otherwise reserve space for the More button and fit progressively
-      let used = moreWidth;
+      // Reserve room for the More button + its gap
+      let used = moreWidth + gap;
       let count = 0;
       for (let i = 0; i < widths.length; i++) {
-        const next = used + widths[i] + (count > 0 ? gap : gap); // gap before each visible item (including first, separating from More? we keep simple)
+        const next = used + widths[i] + (i > 0 ? gap : 0);
         if (next > available) break;
         used = next;
         count++;
