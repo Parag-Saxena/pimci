@@ -270,7 +270,7 @@ function Dashboard() {
 
       {/* Analytics: scheduled vs published + trend */}
       <section className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-xl border border-border bg-card p-5 lg:col-span-2">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-sm font-medium">Publishing activity</h2>
@@ -351,7 +351,7 @@ function Dashboard() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-5">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
           <h2 className="text-sm font-medium">By platform</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">All-time scheduled vs published</p>
           <div className="mt-4 space-y-4">
