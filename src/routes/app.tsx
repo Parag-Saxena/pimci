@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useThemeToggle } from "@/components/ThemeToggle";
+import { AppNav } from "@/components/AppNav";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,34 +82,8 @@ function AppShell() {
           <span className="font-semibold tracking-tight">Pimci</span>
         </Link>
 
-        {/* Center: nav */}
-        <nav
-          aria-label="Primary"
-          className="flex flex-1 items-center justify-center gap-1"
-        >
-          {NAV.map((item) => {
-            const active = item.exact ? path === item.to : path.startsWith(item.to);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                aria-current={active ? "page" : undefined}
-                aria-label={item.label}
-                title={item.label}
-                className={cn(
-                  "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
-                )}
-              >
-                <Icon className="h-4 w-4" aria-hidden="true" />
-                <span className="hidden md:inline">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        {/* Center: nav (responsive — collapses into "More" overflow) */}
+        <AppNav items={NAV} currentPath={path} />
 
         {/* Right: avatar-only account dropdown */}
         <DropdownMenu>
