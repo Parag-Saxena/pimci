@@ -10,11 +10,14 @@ import {
   LogOut,
   ChevronsUpDown,
   UserCircle,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useThemeToggle } from "@/components/ThemeToggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +43,7 @@ function AppShell() {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { dark, toggle: toggleTheme } = useThemeToggle();
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -67,7 +71,7 @@ function AppShell() {
   return (
     <div className="flex min-h-screen bg-background">
       {/* Sidebar — sticky */}
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
+      <aside className="sticky top-0 z-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
         <Link
           to="/app"
           className="flex h-14 items-center gap-2 border-b border-border px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
@@ -150,6 +154,21 @@ function AppShell() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  toggleTheme();
+                }}
+                className="cursor-pointer"
+              >
+                {dark ? (
+                  <Sun className="mr-2 h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Moon className="mr-2 h-4 w-4" aria-hidden="true" />
+                )}
+                {dark ? "Light mode" : "Dark mode"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={handleSignOut} className="cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
                 Log out
@@ -186,8 +205,17 @@ function AppShell() {
           })}
         </nav>
 
-        <main className="flex-1 overflow-hidden pb-16 md:pb-0">
-          <div className="h-full overflow-auto rounded-lg border border-border bg-card text-card-foreground shadow-lg">
+        <main className="relative z-10 flex-1 overflow-hidden pb-16 md:pb-0">
+          <div
+            tabIndex={-1}
+            className={cn(
+              "group/card h-full overflow-auto rounded-xl border border-border bg-card text-card-foreground shadow-xl outline-none ring-0",
+              "transition-[transform,box-shadow] duration-300 ease-out will-change-transform",
+              "hover:-translate-y-0.5 hover:shadow-2xl",
+              "focus-within:-translate-y-0.5 focus-within:shadow-2xl focus-within:ring-2 focus-within:ring-ring/40",
+              "motion-reduce:transition-none motion-reduce:transform-none motion-reduce:hover:translate-y-0 motion-reduce:focus-within:translate-y-0",
+            )}
+          >
             <Outlet />
           </div>
         </main>
