@@ -1147,7 +1147,8 @@ function GenerateDialog({
     setBusy(true);
     setVariants([]);
     try {
-      const res = await generate({ data: { brief, tone, platform, count: 3 } });
+      // Omit `count` so the server uses the user's saved writing-style preference.
+      const res = await generate({ data: { brief, tone, platform } });
       setVariants(res.variants);
       setGroupId(res.variantGroupId);
     } catch (e) {
