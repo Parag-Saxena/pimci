@@ -180,6 +180,7 @@ export type Database = {
           id: string
           timezone: string
           updated_at: string
+          writing_style: Json
         }
         Insert: {
           avatar_url?: string | null
@@ -188,6 +189,7 @@ export type Database = {
           id: string
           timezone?: string
           updated_at?: string
+          writing_style?: Json
         }
         Update: {
           avatar_url?: string | null
@@ -196,6 +198,7 @@ export type Database = {
           id?: string
           timezone?: string
           updated_at?: string
+          writing_style?: Json
         }
         Relationships: []
       }
