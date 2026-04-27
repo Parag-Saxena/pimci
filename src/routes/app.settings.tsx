@@ -707,7 +707,8 @@ function WritingStyleSection() {
     const normalized = normalizeWritingStyle(style);
     const { error } = await supabase
       .from("profiles")
-      .update({ writing_style: normalized as unknown as Record<string, unknown> })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update({ writing_style: normalized as any })
       .eq("id", user.id);
     setSaving(false);
     if (error) {
