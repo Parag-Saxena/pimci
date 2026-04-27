@@ -259,7 +259,9 @@ export const rewritePost = createServerFn({ method: "POST" })
         "Restructure as a strong one-line hook on the first line, blank line, then the body.",
     };
 
-    const sys = `You are a senior ${data.platform} copywriter. ${actionInstr[data.action]} Return only the rewritten post text via the function call.`;
+    const style = await loadWritingStyle(supabase, userId);
+    const stylePrompt = renderStylePrompt(style);
+    const sys = `You are a senior ${data.platform} copywriter. ${actionInstr[data.action]} Return only the rewritten post text via the function call.\n\n${stylePrompt}`;
 
     const result = await callGateway({
       messages: [
