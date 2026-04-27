@@ -190,6 +190,8 @@ function SettingsPage() {
         </div>
       </section>
 
+      <WritingStyleSection />
+
       <ConnectedAccountsSection />
     </div>
   );
