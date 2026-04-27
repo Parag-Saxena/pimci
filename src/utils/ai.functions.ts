@@ -1,5 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  DEFAULT_WRITING_STYLE,
+  normalizeWritingStyle,
+  renderStylePrompt,
+  type WritingStyle,
+} from "@/lib/writing-style";
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const DEFAULT_MODEL = "google/gemini-3-flash-preview";
@@ -12,6 +18,23 @@ type GenInput = {
   platform: Platform;
   count?: number;
 };
+
+async function loadWritingStyle(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  userId: string,
+): Promise<WritingStyle> {
+  try {
+    const { data } = await supabase
+      .from("profiles")
+      .select("writing_style")
+      .eq("id", userId)
+      .maybeSingle();
+    return normalizeWritingStyle(data?.writing_style ?? {});
+  } catch {
+    return DEFAULT_WRITING_STYLE;
+  }
+}
 
 async function callGateway(body: Record<string, unknown>) {
   const apiKey = process.env.LOVABLE_API_KEY;
@@ -55,16 +78,24 @@ export const generatePosts = createServerFn({ method: "POST" })
     if (input.platform !== "linkedin" && input.platform !== "x") {
       throw new Error("Invalid platform");
     }
+    const rawCount = input.count;
     return {
       brief: input.brief.slice(0, 2000),
       tone: (input.tone || "professional").slice(0, 60),
       platform: input.platform,
-      count: Math.min(Math.max(input.count ?? 3, 1), 5),
+      // undefined → fall back to the user's saved style.variant_count
+      count:
+        typeof rawCount === "number"
+          ? Math.min(Math.max(rawCount, 1), 5)
+          : undefined,
     };
   })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const sys = `You are a senior social media writer. Write ${data.count} distinct ${data.platform} post variants in a ${data.tone} tone, based on the user's brief. ${platformGuidance[data.platform]} Each variant must be standalone and complete. Do not number variants or add labels — return only the post text via the function call.`;
+    const style = await loadWritingStyle(supabase, userId);
+    const count = data.count ?? style.variant_count;
+    const stylePrompt = renderStylePrompt(style);
+    const sys = `You are a senior social media writer. Write ${count} distinct ${data.platform} post variants in a ${data.tone} tone, based on the user's brief. ${platformGuidance[data.platform]} Each variant must be standalone and complete. Do not number variants or add labels — return only the post text via the function call.\n\n${stylePrompt}`;
 
     const result = await callGateway({
       messages: [
@@ -228,7 +259,9 @@ export const rewritePost = createServerFn({ method: "POST" })
         "Restructure as a strong one-line hook on the first line, blank line, then the body.",
     };
 
-    const sys = `You are a senior ${data.platform} copywriter. ${actionInstr[data.action]} Return only the rewritten post text via the function call.`;
+    const style = await loadWritingStyle(supabase, userId);
+    const stylePrompt = renderStylePrompt(style);
+    const sys = `You are a senior ${data.platform} copywriter. ${actionInstr[data.action]} Return only the rewritten post text via the function call.\n\n${stylePrompt}`;
 
     const result = await callGateway({
       messages: [

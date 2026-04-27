@@ -15,12 +15,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import {
   listConnectedAccounts,
   disconnectAccount,
   type ConnectedAccountSummary,
 } from "@/utils/social.functions";
 import { useServerFn } from "@tanstack/react-start";
+import {
+  DEFAULT_WRITING_STYLE,
+  normalizeWritingStyle,
+  type WritingStyle,
+} from "@/lib/writing-style";
 
 export const Route = createFileRoute("/app/settings")({
   component: SettingsPage,
@@ -189,6 +203,8 @@ function SettingsPage() {
           </Button>
         </div>
       </section>
+
+      <WritingStyleSection />
 
       <ConnectedAccountsSection />
     </div>
@@ -644,6 +660,243 @@ function AccountCard({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ---------------- Writing Styles ---------------- */
+
+function WritingStyleSection() {
+  const { user } = useAuth();
+  const [style, setStyle] = useState<WritingStyle>(DEFAULT_WRITING_STYLE);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("writing_style")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        toast.error("Could not load writing style");
+      }
+      setStyle(normalizeWritingStyle(data?.writing_style ?? {}));
+      setLoading(false);
+      setDirty(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const update = <K extends keyof WritingStyle>(key: K, value: WritingStyle[K]) => {
+    setStyle((s) => ({ ...s, [key]: value }));
+    setDirty(true);
+  };
+
+  const save = async () => {
+    if (!user) return;
+    setSaving(true);
+    const normalized = normalizeWritingStyle(style);
+    const { error } = await supabase
+      .from("profiles")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update({ writing_style: normalized as any })
+      .eq("id", user.id);
+    setSaving(false);
+    if (error) {
+      toast.error("Save failed");
+      return;
+    }
+    setStyle(normalized);
+    setDirty(false);
+    toast.success("Writing style saved");
+  };
+
+  const reset = () => {
+    setStyle(DEFAULT_WRITING_STYLE);
+    setDirty(true);
+  };
+
+  return (
+    <section className="mt-6 rounded-xl border border-border bg-card p-4 sm:p-6">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-sm font-medium">My writing style</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Applied automatically every time AI generates or rewrites a post for you.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={reset}
+          disabled={loading || saving}
+          className="self-start text-xs"
+        >
+          Reset to defaults
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-16 rounded-md border border-border bg-muted/30" />
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="mt-6 grid gap-5 sm:grid-cols-2">
+            <Field label="Post length">
+              <Select value={style.length} onValueChange={(v) => update("length", v as WritingStyle["length"])}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="short">Short (~80 words)</SelectItem>
+                  <SelectItem value="medium">Medium (~120–200 words)</SelectItem>
+                  <SelectItem value="long">Long (~250–400 words)</SelectItem>
+                  <SelectItem value="blog">Blog (~500–900 words)</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+
+            <Field label={`Paragraphs · ${style.paragraphs}`}>
+              <Slider
+                value={[style.paragraphs]}
+                min={1}
+                max={8}
+                step={1}
+                onValueChange={(v) => update("paragraphs", v[0] ?? 3)}
+              />
+            </Field>
+
+            <Field label="Bullets / list style">
+              <Select
+                value={style.list_style}
+                onValueChange={(v) => update("list_style", v as WritingStyle["list_style"])}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No lists — flowing paragraphs</SelectItem>
+                  <SelectItem value="bullets">Bulleted list (•)</SelectItem>
+                  <SelectItem value="dashes">Dashed list (–)</SelectItem>
+                  <SelectItem value="numbered">Numbered list (1., 2., 3.)</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+
+            <Field label="Emoji usage">
+              <Select value={style.emoji} onValueChange={(v) => update("emoji", v as WritingStyle["emoji"])}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="minimal">Minimal (≤1)</SelectItem>
+                  <SelectItem value="moderate">Moderate (2–3)</SelectItem>
+                  <SelectItem value="heavy">Heavy (5+)</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+
+            <Field label="Voice">
+              <Select value={style.voice} onValueChange={(v) => update("voice", v as WritingStyle["voice"])}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="first_person">First person (I, my)</SelectItem>
+                  <SelectItem value="we_team">We / our team</SelectItem>
+                  <SelectItem value="third_person">Third person</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+
+            <Field label="Reading level">
+              <Select
+                value={style.reading_level}
+                onValueChange={(v) => update("reading_level", v as WritingStyle["reading_level"])}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="simple">Simple (≈ grade 6)</SelectItem>
+                  <SelectItem value="everyday">Everyday plain English</SelectItem>
+                  <SelectItem value="advanced">Advanced / industry terms ok</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+
+            <Field label={`Hashtags · ${style.hashtag_count}`}>
+              <Slider
+                value={[style.hashtag_count]}
+                min={0}
+                max={5}
+                step={1}
+                onValueChange={(v) => update("hashtag_count", v[0] ?? 0)}
+              />
+            </Field>
+
+            <Field label="Call-to-action">
+              <Select value={style.cta} onValueChange={(v) => update("cta", v as WritingStyle["cta"])}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="soft_question">Soft open-ended question</SelectItem>
+                  <SelectItem value="explicit_cta">Explicit CTA</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+
+            <Field label={`AI variants per generation · ${style.variant_count}`}>
+              <Slider
+                value={[style.variant_count]}
+                min={1}
+                max={5}
+                step={1}
+                onValueChange={(v) => update("variant_count", v[0] ?? 3)}
+              />
+            </Field>
+          </div>
+
+          <div className="mt-6 space-y-1.5">
+            <Label htmlFor="ws-notes" className="text-xs">
+              Extra style notes (optional)
+            </Label>
+            <Textarea
+              id="ws-notes"
+              value={style.custom_notes ?? ""}
+              onChange={(e) => update("custom_notes", e.target.value)}
+              placeholder='e.g. "Always reference real numbers", "Avoid corporate buzzwords", "Sign off with — A."'
+              maxLength={500}
+              className="min-h-[72px]"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              {(style.custom_notes ?? "").length} / 500
+            </p>
+          </div>
+
+          <div className="mt-6 flex items-center justify-between gap-3">
+            <p className="text-[11px] text-muted-foreground">
+              {dirty ? "Unsaved changes" : "Saved"}
+            </p>
+            <Button onClick={save} disabled={saving || !dirty}>
+              {saving ? "Saving…" : "Save writing style"}
+            </Button>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs">{label}</Label>
+      {children}
     </div>
   );
 }
