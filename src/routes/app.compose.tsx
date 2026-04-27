@@ -1166,7 +1166,7 @@ function GenerateDialog({
             <Sparkles className="h-4 w-4 text-primary" /> AI brief → posts
           </DialogTitle>
           <DialogDescription>
-            Describe what you want to post about. We'll draft 3 {platform === "linkedin" ? "LinkedIn" : "X"} variants.
+            Describe what you want to post about. We'll draft variants in your saved writing style — change defaults in Settings → Writing Styles.
           </DialogDescription>
         </DialogHeader>
 
