@@ -20,7 +20,8 @@ type GenInput = {
 };
 
 async function loadWritingStyle(
-  supabase: { from: (t: string) => { select: (c: string) => { eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: { writing_style?: unknown } | null }> } } } },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
   userId: string,
 ): Promise<WritingStyle> {
   try {
