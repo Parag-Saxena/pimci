@@ -1209,7 +1209,7 @@ function GenerateDialog({
                 ) : (
                   <>
                     <Sparkles className="mr-1.5 h-4 w-4" />
-                    Generate 3 variants
+                    Generate variants
                   </>
                 )}
               </Button>
