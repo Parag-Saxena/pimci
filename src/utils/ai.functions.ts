@@ -1,5 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  DEFAULT_WRITING_STYLE,
+  normalizeWritingStyle,
+  renderStylePrompt,
+  type WritingStyle,
+} from "@/lib/writing-style";
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const DEFAULT_MODEL = "google/gemini-3-flash-preview";
@@ -12,6 +18,22 @@ type GenInput = {
   platform: Platform;
   count?: number;
 };
+
+async function loadWritingStyle(
+  supabase: { from: (t: string) => { select: (c: string) => { eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: { writing_style?: unknown } | null }> } } } },
+  userId: string,
+): Promise<WritingStyle> {
+  try {
+    const { data } = await supabase
+      .from("profiles")
+      .select("writing_style")
+      .eq("id", userId)
+      .maybeSingle();
+    return normalizeWritingStyle(data?.writing_style ?? {});
+  } catch {
+    return DEFAULT_WRITING_STYLE;
+  }
+}
 
 async function callGateway(body: Record<string, unknown>) {
   const apiKey = process.env.LOVABLE_API_KEY;
